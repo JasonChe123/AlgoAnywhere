@@ -88,10 +88,10 @@ class IncomeStatement(models.Model):
 
     # EPS
     earnings_per_share_basic = models.DecimalField(
-        max_digits=10, decimal_places=4, null=True, blank=True, help_text="EPS basic"
+        max_digits=15, decimal_places=4, null=True, blank=True, help_text="EPS basic"
     )
     earnings_per_share_diluted = models.DecimalField(
-        max_digits=10, decimal_places=4, null=True, blank=True, help_text="EPS diluted"
+        max_digits=15, decimal_places=4, null=True, blank=True, help_text="EPS diluted"
     )
 
     # Metadata

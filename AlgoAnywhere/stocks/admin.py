@@ -22,7 +22,7 @@ class IncomeStatementAdmin(admin.ModelAdmin):
         "net_income",
         "form_type",
     )
-    list_filter = ("fiscal_year", "form_type", "fiscal_quarter")
+    list_filter = ("fiscal_year", "form_type", "fiscal_quarter", "stock")
     search_fields = ("stock__ticker", "stock__name")
     ordering = ("-fiscal_year", "-fiscal_quarter", "stock")
     raw_id_fields = ("stock",)
