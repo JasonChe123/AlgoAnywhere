@@ -28,7 +28,6 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 
 from stocks.models import IncomeStatement, Stock
-from AlgoAnywhere.settings import BASE_DIR
 
 
 def timing_decorator(func):
@@ -335,7 +334,7 @@ class Command(BaseCommand):
             # Use local files for development/testing
             try:
                 self.stdout.write(f"  Reading local companyfacts.zip...")
-                current_folder = os.path.join(BASE_DIR, 'stocks', 'management', 'commands')
+                current_folder = os.path.dirname(os.path.abspath(__file__))
                 with open(os.path.join(current_folder, 'companyfacts.zip'), 'rb') as f:
                     companyfacts_data = f.read()
                 self.stdout.write(f"  Reading local company_tickers.json...")
@@ -359,11 +358,35 @@ class Command(BaseCommand):
                 files = [f for f in z.namelist() if f.endswith(".json")]
                 self.stdout.write(f"  Found {len(files)} company fact files in ZIP")
                 
+                # Pre-fetch existing income statements to avoid database queries during processing
+                existing_statements = set()
+                if limit:
+                    # Only fetch existing statements for the stocks we'll process
+                    limit_files = files[:limit]
+                    limit_ciks = set()
+                    for filename in limit_files:
+                        try:
+                            cik = int(filename.split('/')[-1].replace('.json', '').replace('CIK', ''))
+                            limit_ciks.add(cik)
+                        except:
+                            continue
+                    
+                    existing_qs = IncomeStatement.objects.filter(
+                        stock__ticker__in=[cik_ticker_mapper.get(cik, '') for cik in limit_ciks if cik_ticker_mapper.get(cik)]
+                    )
+                else:
+                    existing_qs = IncomeStatement.objects.all()
+                
+                # Create a set of existing (ticker, fiscal_year, fiscal_quarter) combinations
+                for stmt in existing_qs:
+                    existing_statements.add((stmt.stock.ticker, stmt.fiscal_year, stmt.fiscal_quarter))
+                
+                self.stdout.write(f"  Found {len(existing_statements)} existing income statement records")
+                
                 # Initialize counters for progress tracking
                 processed = 0
                 files_processed = 0  # Track actual file progress
                 created = 0
-                updated = 0
                 failed = 0
                 skipped_no_match = 0
                 batch_size = 50  # Process companies in batches for memory efficiency
@@ -404,10 +427,15 @@ class Command(BaseCommand):
                                     if not statements:
                                         continue
 
-                                    # Save income statements using individual creates to avoid conflicts
+                                    # Save income statements - only insert new records to avoid database updates
                                     created_count = 0
                                     for stmt_data in statements:
                                         try:
+                                            # Check if this record already exists
+                                            key = (ticker, stmt_data["fiscal_year"], stmt_data.get("fiscal_quarter"))
+                                            if key in existing_statements:
+                                                continue  # Skip existing records - we only want first filing
+                                            
                                             # Parse filing date for database storage
                                             filing_date_str = stmt_data.get("filing_date")
                                             filing_date = None
@@ -419,45 +447,41 @@ class Command(BaseCommand):
                                                 except (ValueError, TypeError):
                                                     pass
 
-                                            # Use get_or_create to handle unique constraints
-                                            # This prevents duplicate records for the same fiscal period
-                                            obj, was_created = IncomeStatement.objects.get_or_create(
+                                            # Create new record (no get_or_create needed since we checked existence)
+                                            IncomeStatement.objects.create(
                                                 stock=stock,
                                                 period_end_date=stmt_data["period_end_date"],
                                                 fiscal_year=stmt_data["fiscal_year"],
                                                 fiscal_quarter=stmt_data.get("fiscal_quarter"),
-                                                defaults={
-                                                    "form_type": stmt_data.get("form_type"),
-                                                    "filing_date": filing_date,
-                                                    "revenue": stmt_data.get("revenue"),
-                                                    "cost_of_revenue": stmt_data.get("cost_of_revenue"),
-                                                    "gross_profit": stmt_data.get("gross_profit"),
-                                                    "operating_expenses": stmt_data.get("operating_expenses"),
-                                                    "research_and_development": stmt_data.get("research_and_development"),
-                                                    "selling_general_and_administrative": stmt_data.get("selling_general_and_administrative"),
-                                                    "operating_income": stmt_data.get("operating_income"),
-                                                    "interest_expense": stmt_data.get("interest_expense"),
-                                                    "interest_income": stmt_data.get("interest_income"),
-                                                    "other_income_expense": stmt_data.get("other_income_expense"),
-                                                    "income_before_tax": stmt_data.get("income_before_tax"),
-                                                    "income_tax_expense": stmt_data.get("income_tax_expense"),
-                                                    "net_income": stmt_data.get("net_income"),
-                                                    "earnings_per_share_basic": stmt_data.get("earnings_per_share_basic"),
-                                                    "earnings_per_share_diluted": stmt_data.get("earnings_per_share_diluted"),
-                                                }
+                                                form_type=stmt_data.get("form_type"),
+                                                filing_date=filing_date,
+                                                revenue=stmt_data.get("revenue"),
+                                                cost_of_revenue=stmt_data.get("cost_of_revenue"),
+                                                gross_profit=stmt_data.get("gross_profit"),
+                                                operating_expenses=stmt_data.get("operating_expenses"),
+                                                research_and_development=stmt_data.get("research_and_development"),
+                                                selling_general_and_administrative=stmt_data.get("selling_general_and_administrative"),
+                                                operating_income=stmt_data.get("operating_income"),
+                                                interest_expense=stmt_data.get("interest_expense"),
+                                                interest_income=stmt_data.get("interest_income"),
+                                                other_income_expense=stmt_data.get("other_income_expense"),
+                                                income_before_tax=stmt_data.get("income_before_tax"),
+                                                income_tax_expense=stmt_data.get("income_tax_expense"),
+                                                net_income=stmt_data.get("net_income"),
+                                                earnings_per_share_basic=stmt_data.get("earnings_per_share_basic"),
+                                                earnings_per_share_diluted=stmt_data.get("earnings_per_share_diluted"),
                                             )
                                             
-                                            if was_created:
-                                                created_count += 1
-                                            else:
-                                                updated += 1
+                                            created_count += 1
+                                            # Add to existing set to avoid duplicates in same batch
+                                            existing_statements.add(key)
                                                 
                                         except Exception as e:
                                             failed += 1
                                             if failed <= 10:
                                                 self.stdout.write(
                                                     self.style.WARNING(
-                                                        f"  Skip {stock.ticker} {stmt_data.get('period_end_date')}: {e}"
+                                                        f"  Skip {ticker} {stmt_data.get('period_end_date')}: {e}"
                                                     )
                                                 )
                                     
@@ -496,7 +520,7 @@ class Command(BaseCommand):
 
                                     if processed % 100 == 0:
                                         self.stdout.write(
-                                            f"  Processed {processed} companies ({created} created, {updated} updated)..."
+                                            f"  Processed {processed} companies ({created} created)..."
                                         )
 
                             # Handle individual file processing errors gracefully
@@ -518,7 +542,7 @@ class Command(BaseCommand):
                     self.style.SUCCESS(
                         f"Files processed: {files_processed} total, "
                         f"{processed} companies with data, "
-                        f"{created} created, {updated} updated, {failed} failed, "
+                        f"{created} created, {failed} failed, "
                         f"{skipped_no_match} skipped (no matching ticker)."
                     )
                 )
