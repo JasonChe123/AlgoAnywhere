@@ -4,4 +4,11 @@
     <option name="sdkName" value="Python 3.12 (AlgoAnywhere)" />
   </component>
   <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.12 (AlgoAnywhere)" project-jdk-type="Python SDK" />
+  <component name="PythonCompatibilityInspection">
+    <option name="ourVersions">
+      <list>
+        <option value="3.12" />
+      </list>
+    </option>
+  </component>
 </project>

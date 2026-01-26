@@ -1,0 +1,565 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Equity Long/Short Strategy{% endblock %}
+
+{% block content %}
+<div class="strategy-hero">
+  <div class="container">
+    <div class="strategy-hero-content">
+      <h1 class="strategy-title">Equity Long/Short Strategy</h1>
+      <p class="strategy-description">
+        Multi-factor equity strategy combining value, momentum, quality, and growth signals to generate alpha 
+        while maintaining market neutrality through systematic risk management.
+      </p>
+      <div class="strategy-actions">
+        <a href="{% url 'strategies:equity_long_short_create' %}" class="btn btn-primary">Create Portfolio</a>
+        <a href="#" class="btn btn-secondary">View Documentation</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="strategy-overview">
+  <div class="container">
+    <div class="strategy-grid">
+      <div class="strategy-card">
+        <div class="card-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z"/>
+          </svg>
+        </div>
+        <h3>Risk Managed</h3>
+        <p>Beta and sector neutral positioning with controlled leverage and systematic risk limits.</p>
+      </div>
+      
+      <div class="strategy-card">
+        <div class="card-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 3v18h18"/>
+            <path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/>
+          </svg>
+        </div>
+        <h3>Multi-Factor</h3>
+        <p>Combines value, momentum, quality, and growth factors for robust signal generation.</p>
+      </div>
+      
+      <div class="strategy-card">
+        <div class="card-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M12 6v6l4 2"/>
+          </svg>
+        </div>
+        <h3>Systematic</h3>
+        <p>Rule-based approach with disciplined rebalancing and consistent portfolio construction.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="strategy-features">
+  <div class="container">
+    <div class="features-grid">
+      <div class="feature-section">
+        <h2>Strategy Overview</h2>
+        <p>
+          Our Equity Long/Short strategy employs a quantitative approach to identify mispriced securities 
+          across the market cap spectrum. By going long undervalued stocks and short overvalued ones, 
+          we aim to generate alpha while maintaining market exposure close to zero.
+        </p>
+        
+        <h3>Key Characteristics</h3>
+        <ul class="feature-list">
+          <li><strong>Universe:</strong> S&P 500, Russell 1000, or custom stock universe</li>
+          <li><strong>Position Count:</strong> Typically 50-100 stocks (25-50 long, 25-50 short)</li>
+          <li><strong>Rebalancing:</strong> Monthly, quarterly, or custom frequency</li>
+          <li><strong>Leverage:</strong> Up to 2x gross exposure (1x long, 1x short)</li>
+          <li><strong>Risk Controls:</strong> Beta neutral, sector neutral, position size limits</li>
+        </ul>
+      </div>
+      
+      <div class="feature-section">
+        <h2>Factor Model</h2>
+        <p>
+          The strategy combines four complementary factors to generate robust signals:
+        </p>
+        
+        <div class="factor-grid">
+          <div class="factor-item">
+            <h4>Value</h4>
+            <p>P/E, P/B, P/S ratios identifying undervalued securities</p>
+          </div>
+          <div class="factor-item">
+            <h4>Momentum</h4>
+            <p>Price performance across multiple time horizons</p>
+          </div>
+          <div class="factor-item">
+            <h4>Quality</h4>
+            <p>Profitability metrics and financial health indicators</p>
+          </div>
+          <div class="factor-item">
+            <h4>Growth</h4>
+            <p>Revenue and earnings growth consistency</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="portfolio-section">
+  <div class="container">
+    <div class="section-header">
+      <h2>Your Portfolios</h2>
+      <a href="{% url 'strategies:equity_long_short_create' %}" class="btn btn-primary">Create New Portfolio</a>
+    </div>
+    
+    {% if portfolios %}
+    <div class="portfolio-grid">
+      {% for portfolio in portfolios %}
+      <div class="portfolio-card">
+        <div class="portfolio-header">
+          <h3>{{ portfolio.name }}</h3>
+          <span class="portfolio-status {% if portfolio.is_backtest %}backtest{% else %}live{% endif %}">
+            {% if portfolio.is_backtest %}Backtest{% else %}Live{% endif %}
+          </span>
+        </div>
+        
+        <div class="portfolio-metrics">
+          <div class="metric">
+            <span class="metric-label">Initial Capital</span>
+            <span class="metric-value">${{ portfolio.initial_capital|floatformat:0|intcomma }}</span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">Universe</span>
+            <span class="metric-value">{{ portfolio.get_universe_type_display }}</span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">Rebalancing</span>
+            <span class="metric-value">{{ portfolio.get_rebalance_frequency_display }}</span>
+          </div>
+        </div>
+        
+        <div class="portfolio-actions">
+          <a href="{% url 'strategies:equity_long_short_backtest' portfolio.id %}" class="btn btn-sm btn-outline">Run Backtest</a>
+          {% if portfolio.backtest_result %}
+          <a href="{% url 'strategies:equity_long_short_results' portfolio.id %}" class="btn btn-sm btn-outline">View Results</a>
+          {% endif %}
+          <a href="{% url 'strategies:equity_long_short_generate_basket' %}" class="btn btn-sm btn-primary">Generate Basket</a>
+        </div>
+        
+        <div class="portfolio-date">
+          Created {{ portfolio.created_at|date:"M d, Y" }}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <div class="empty-icon">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M9 14l2 2 4-4"/>
+          <path d="M21 12c.552 0 1-.448 1-1V5c0-.552-.448-1-1-1H3c-.552 0-1 .448-1 1v6c0 .552.448 1 1 1h18zM3 21h18c.552 0 1-.448 1-1v-6c0-.552-.448-1-1-1H3c-.552 0-1 .448-1 1v6c0 .552.448 1 1 1z"/>
+        </svg>
+      </div>
+      <h3>No Portfolios Yet</h3>
+      <p>Get started by creating your first equity long-short portfolio to begin backtesting strategies.</p>
+      <a href="{% url 'strategies:equity_long_short_create' %}" class="btn btn-primary">Create Your First Portfolio</a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="cta-section">
+  <div class="container">
+    <div class="cta-content">
+      <h2>Ready to Start Backtesting?</h2>
+      <p>Create your portfolio and test the equity long-short strategy with historical data.</p>
+      <a href="{% url 'strategies:equity_long_short_create' %}" class="btn btn-primary btn-large">Get Started Now</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.strategy-hero {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  color: white;
+  padding: 80px 0;
+  text-align: center;
+}
+
+.strategy-hero-content {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.strategy-title {
+  font-size: 3rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  background: linear-gradient(90deg, #60a5fa, #34d399);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.strategy-description {
+  font-size: 1.25rem;
+  margin-bottom: 2rem;
+  opacity: 0.9;
+  line-height: 1.6;
+}
+
+.strategy-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.strategy-overview {
+  padding: 80px 0;
+  background: #f8fafc;
+}
+
+.strategy-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+  margin-top: 3rem;
+}
+
+.strategy-card {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.card-icon {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #3b82f6, #10b981);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1rem;
+  color: white;
+}
+
+.strategy-card h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: #1e293b;
+}
+
+.strategy-card p {
+  color: #64748b;
+  line-height: 1.6;
+}
+
+.strategy-features {
+  padding: 80px 0;
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4rem;
+  margin-top: 3rem;
+}
+
+.feature-section h2 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  color: #1e293b;
+}
+
+.feature-section h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 2rem 0 1rem;
+  color: #334155;
+}
+
+.feature-list {
+  list-style: none;
+  padding: 0;
+}
+
+.feature-list li {
+  padding: 0.5rem 0;
+  color: #64748b;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.feature-list li:last-child {
+  border-bottom: none;
+}
+
+.factor-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.factor-item {
+  background: #f1f5f9;
+  padding: 1.5rem;
+  border-radius: 8px;
+  border-left: 4px solid #3b82f6;
+}
+
+.factor-item h4 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: #1e293b;
+}
+
+.factor-item p {
+  color: #64748b;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.portfolio-section {
+  padding: 80px 0;
+  background: #f8fafc;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.section-header h2 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.portfolio-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 1.5rem;
+}
+
+.portfolio-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+}
+
+.portfolio-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.portfolio-header h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.portfolio-status {
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.portfolio-status.backtest {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.portfolio-status.live {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.portfolio-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.metric {
+  text-align: center;
+}
+
+.metric-label {
+  display: block;
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-bottom: 0.25rem;
+}
+
+.metric-value {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.portfolio-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.portfolio-date {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  text-align: center;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+}
+
+.empty-icon {
+  width: 64px;
+  height: 64px;
+  background: #f1f5f9;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1.5rem;
+  color: #64748b;
+}
+
+.empty-state h3 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 0.5rem;
+}
+
+.empty-state p {
+  color: #64748b;
+  margin-bottom: 2rem;
+}
+
+.cta-section {
+  background: linear-gradient(135deg, #3b82f6, #10b981);
+  color: white;
+  padding: 80px 0;
+  text-align: center;
+}
+
+.cta-content h2 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+.cta-content p {
+  font-size: 1.25rem;
+  margin-bottom: 2rem;
+  opacity: 0.9;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-primary {
+  background: #3b82f6;
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #2563eb;
+}
+
+.btn-secondary {
+  background: transparent;
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.btn-outline {
+  background: transparent;
+  color: #3b82f6;
+  border: 1px solid #3b82f6;
+}
+
+.btn-outline:hover {
+  background: #3b82f6;
+  color: white;
+}
+
+.btn-sm {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+}
+
+.btn-large {
+  padding: 1rem 2rem;
+  font-size: 1.125rem;
+}
+
+@media (max-width: 768px) {
+  .strategy-title {
+    font-size: 2rem;
+  }
+  
+  .features-grid {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+  
+  .factor-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .section-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+  
+  .portfolio-metrics {
+    grid-template-columns: 1fr;
+  }
+  
+  .strategy-actions {
+    flex-direction: column;
+    align-items: center;
+  }
+}
+</style>
+{% endblock %}

@@ -355,3 +355,47 @@ class CashFlowStatement(models.Model):
     def __str__(self):
         q = f"Q{self.fiscal_quarter}" if self.fiscal_quarter else "Annual"
         return f"{self.stock.ticker} — {self.fiscal_year} {q} — {self.period_end_date}"
+
+
+class DailyPriceData(models.Model):
+    """Daily price data from Yahoo Finance with OHLCV data."""
+    
+    stock = models.ForeignKey(
+        Stock, on_delete=models.CASCADE, related_name="daily_prices", db_index=True
+    )
+    date = models.DateField(help_text="Trading date (YYYY-MM-DD)")
+    open_price = models.DecimalField(
+        max_digits=15, decimal_places=4, null=True, blank=True, help_text="Opening price"
+    )
+    high_price = models.DecimalField(
+        max_digits=15, decimal_places=4, null=True, blank=True, help_text="Highest price"
+    )
+    low_price = models.DecimalField(
+        max_digits=15, decimal_places=4, null=True, blank=True, help_text="Lowest price"
+    )
+    close_price = models.DecimalField(
+        max_digits=15, decimal_places=4, null=True, blank=True, help_text="Closing price"
+    )
+    adjusted_close = models.DecimalField(
+        max_digits=15, decimal_places=4, null=True, blank=True, help_text="Adjusted closing price"
+    )
+    volume = models.BigIntegerField(
+        null=True, blank=True, help_text="Trading volume"
+    )
+    
+    # Metadata
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["stock", "-date"]
+        unique_together = [["stock", "date"]]
+        verbose_name = "Daily Price Data"
+        verbose_name_plural = "Daily Price Data"
+        indexes = [
+            models.Index(fields=["stock", "-date"]),
+            models.Index(fields=["date"]),
+        ]
+
+    def __str__(self):
+        return f"{self.stock.ticker} — {self.date} — ${self.close_price}"

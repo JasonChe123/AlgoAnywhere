@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="DjangoOptions">
+    <option name="myRootFolder" value="$PROJECT_DIR$/AlgoAnywhere" />
+    <option name="mySettingsModule" value="AlgoAnywhere.settings" />
+    <option name="myManageScript" value="$PROJECT_DIR$/AlgoAnywhere/manage.py" />
+  </component>
+</project>

@@ -28,7 +28,7 @@
           <button type="button" class="dropdown-trigger" aria-expanded="false" aria-haspopup="true">Strategies</button>
           <div class="dropdown-menu" role="menu">
             <a class="dropdown-item" href="#">Multi-Strategy</a>
-            <a class="dropdown-item" href="#">Equity Long/Short</a>
+            <a class="dropdown-item" href="{% url 'strategies:equity_long_short_home' %}">Equity Long/Short</a>
             <a class="dropdown-item" href="#">Global Macro</a>
             <a class="dropdown-item" href="#">CTA / Managed Futures</a>
             <a class="dropdown-item" href="#">Volatility</a>
@@ -72,7 +72,7 @@
           <button type="button" class="dropdown-trigger">Strategies</button>
           <div class="dropdown-menu">
             <a class="dropdown-item" href="#">Multi-Strategy</a>
-            <a class="dropdown-item" href="#">Equity Long/Short</a>
+            <a class="dropdown-item" href="{% url 'strategies:equity_long_short_home' %}">Equity Long/Short</a>
             <a class="dropdown-item" href="#">Global Macro</a>
             <a class="dropdown-item" href="#">CTA / Managed Futures</a>
             <a class="dropdown-item" href="#">Volatility</a>
