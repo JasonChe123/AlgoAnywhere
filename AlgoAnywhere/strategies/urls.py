@@ -10,6 +10,9 @@ app_name = 'strategies'
 urlpatterns = [
     # Equity Long-Short Strategy URLs
     path('equity-long-short/', equity_long_short.equity_long_short_home, name='equity_long_short_home'),
+    path('equity-long-short/backtest-config/', equity_long_short.backtest_config, name='equity_long_short_backtest_config'),
+    path('equity-long-short/run-backtest/', equity_long_short.run_backtest, name='equity_long_short_run_backtest'),
+    path('equity-long-short/backtest-results/', equity_long_short.backtest_results_display, name='equity_long_short_backtest_results'),
     path('equity-long-short/create/', equity_long_short.create_portfolio, name='equity_long_short_create'),
     path('equity-long-short/backtest/<int:portfolio_id>/', equity_long_short.backtest_strategy, name='equity_long_short_backtest'),
     path('equity-long-short/results/<int:portfolio_id>/', equity_long_short.portfolio_results, name='equity_long_short_results'),

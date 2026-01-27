@@ -1,0 +1,1925 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Backtest Configuration - Equity Long/Short Strategy{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+<style>
+
+
+body {
+    background: var(--bg-deep);
+    color: var(--text);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.container {
+    padding-left: 2rem;
+    padding-right: 2rem;
+    max-width: 1600px;
+    width: 100%;
+    background: var(--bg-deep);
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+}
+
+@media (min-width: 1400px) {
+    .container {
+        padding-left: 3rem;
+        padding-right: 3rem;
+    }
+}
+
+.hero-section {
+    background: var(--bg-deep);
+    color: var(--text);
+    padding: 3rem 2rem;
+    margin: 0 -2rem 2rem -2rem;
+    border-radius: 0 0 2rem 2rem;
+    transition: background 0.3s ease;
+}
+
+@media (max-width: 768px) {
+    .hero-section {
+        padding: 2rem 1rem;
+        margin: 0 -1rem 2rem -1rem;
+    }
+}
+
+@media (min-width: 1400px) {
+    .hero-section {
+        padding: 4rem 3rem;
+        margin: 0 -3rem 2rem -3rem;
+    }
+}
+
+.hero-section h1 {
+    font-weight: 700;
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.config-card {
+    background: var(--bg-card);
+    border-radius: 1rem;
+    box-shadow: var(--shadow);
+    margin-bottom: 1.5rem;
+    transition: all 0.3s ease;
+    margin-left: 0;
+    margin-right: 0;
+    border: 1px solid var(--border);
+}
+
+.config-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+}
+
+.config-card .card-header {
+    background: var(--bg-elevated);
+    border-bottom: 2px solid var(--border);
+    padding: 1.5rem;
+}
+
+.config-card .card-header h3 {
+    color: var(--text);
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.config-card .card-header i {
+    color: var(--secondary-color);
+    margin-right: 0.5rem;
+}
+
+.config-card .card-body {
+    padding: 2rem;
+}
+
+
+.btn-light {
+    background: var(--bg-card);
+    color: var(--text);
+    border: 1px solid var(--border);
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-light:hover {
+    background: var(--bg-elevated);
+    color: var(--accent);
+    transform: translateY(-1px);
+}
+
+.btn-primary {
+    background: var(--accent);
+    color: var(--bg-card);
+    border: none;
+    border-radius: 0.75rem;
+    padding: 0.875rem 2rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    background: var(--accent-hover);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+}
+
+.input-group-text {
+    background: var(--bg-elevated);
+    border: 2px solid var(--border);
+    border-right: none;
+    border-radius: 0.75rem 0 0 0.75rem;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+.sector-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.75rem;
+    padding: 1rem;
+    background: var(--bg-elevated);
+    border-radius: 0.75rem;
+    border: 1px solid var(--border);
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.sector-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.5rem;
+    transition: all 0.3s ease;
+    gap: 0.5rem;
+}
+
+.sector-item:hover {
+    background: var(--bg-elevated);
+}
+
+.sector-name {
+    font-weight: 500;
+    color: var(--text);
+}
+
+.sector-count {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    background: var(--bg-elevated);
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.option-box {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-top: 0.5rem;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.metrics-category {
+    margin-bottom: 1rem;
+}
+
+.metrics-category:last-child {
+    margin-bottom: 0;
+}
+
+.category-title {
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.metrics-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+}
+
+.metric-item {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: 500;
+    display: inline-block;
+}
+
+.ranking-metric-grid {
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    padding: 1rem;
+    background: var(--bg-elevated);
+}
+
+.metric-row {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.metric-row:last-child {
+    margin-bottom: 0;
+}
+
+.metric-title {
+    flex: 1;
+    min-width: 140px;
+}
+
+.metric-option {
+    flex: 1;
+}
+
+.metric-toggle {
+    flex: 1;
+}
+
+.metric-data {
+    flex: 1;
+}
+
+.metric-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 0.75rem 0;
+}
+
+.metric-label {
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 0;
+    white-space: nowrap;
+    display: block;
+    padding-top: 0.375rem;
+}
+
+
+.metric-type-selector {
+    margin-bottom: 0;
+}
+
+.form-select-sm {
+    font-size: 0.875rem;
+    padding: 0.375rem 0.75rem;
+}
+
+.metric-type-selector .btn-group {
+    display: flex;
+    flex-wrap: nowrap;
+    width: 100%;
+}
+
+.metric-type-selector .btn-check {
+    display: none;
+}
+
+.metric-type-selector .btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    white-space: nowrap;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8rem;
+    margin-right: 0.5rem;
+}
+
+.metric-type-selector .btn:last-child {
+    margin-right: 0;
+}
+
+.metric-type-selector .btn-outline-primary {
+    border-color: var(--secondary-color);
+    color: var(--secondary-color);
+}
+
+.metric-type-selector .btn-outline-primary:hover {
+    background-color: var(--accent);
+    border-color: var(--accent);
+    color: var(--bg-card);
+}
+
+.metric-type-selector .btn-check:checked + .btn-outline-primary {
+    background-color: var(--accent);
+    border-color: var(--accent);
+    color: var(--bg-card);
+}
+
+.metric-section {
+    background: var(--bg-elevated);
+    border-radius: 0.75rem;
+    padding: 1rem;
+    border: 1px solid var(--border);
+}
+
+.metric-category {
+    margin-bottom: 0;
+}
+
+.form-check {
+    margin-bottom: 0.75rem;
+}
+
+.form-check:last-child {
+    margin-bottom: 0;
+}
+
+.form-check-input {
+    margin-right: 0.5rem;
+}
+
+.form-check-label {
+    font-size: 0.9rem;
+    color: #374151;
+    cursor: pointer;
+}
+
+.form-check-input:checked {
+    background-color: var(--secondary-color);
+    border-color: var(--secondary-color);
+}
+
+.metric-category {
+    margin-bottom: 1rem;
+}
+
+.metric-type-selector {
+    margin-bottom: 1.5rem;
+}
+
+.metric-type-selector .btn-group {
+    display: flex;
+    flex-wrap: nowrap;
+    width: 100%;
+}
+
+.metric-type-selector .btn-check {
+    display: none;
+}
+
+.metric-type-selector .btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    white-space: nowrap;
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+}
+
+/* Icon spacing */
+.fas {
+    margin-right: 0.5rem;
+}
+
+/* Flatpickr theme customization */
+.flatpickr-calendar {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+}
+
+.flatpickr-calendar.inline {
+    border-radius: 0.5rem;
+}
+
+.flatpickr-calendar.hasTime.noCalendar {
+    border-radius: 0.5rem;
+}
+
+.flatpickr-calendar.showTimeInput.hasTime .flatpickr-time {
+    border-top: 1px solid var(--border);
+}
+
+.flatpickr-months {
+    background: var(--bg-card);
+    color: var(--text);
+    border-radius: 0.5rem 0.5rem 0 0;
+}
+
+.flatpickr-month {
+    color: var(--text);
+    fill: var(--text);
+}
+
+.flatpickr-current-month .flatpickr-monthDropdown {
+    background: var(--bg-card) !important;
+    color: var(--text) !important;
+    border: 1px solid var(--border) !important;
+}
+
+.flatpickr-current-month .flatpickr-monthDropdown:hover {
+    background: var(--bg-elevated) !important;
+}
+
+.flatpickr-current-month .flatpickr-monthDropdown option {
+    background: var(--bg-card) !important;
+    color: var(--text) !important;
+}
+
+.flatpickr-current-month .flatpickr-monthDropdown select {
+    background: var(--bg-card) !important;
+    color: var(--text) !important;
+}
+
+.flatpickr-current-month .numInputWrapper {
+    background: var(--bg-card) !important;
+    color: var(--text) !important;
+    border: 1px solid var(--border) !important;
+}
+
+.flatpickr-current-month .numInputWrapper:hover {
+    background: var(--bg-elevated) !important;
+}
+
+.flatpickr-current-month .numInputWrapper input {
+    background: transparent !important;
+    color: var(--text) !important;
+}
+
+.flatpickr-current-month .numInputWrapper span {
+    background: transparent !important;
+    color: var(--text) !important;
+}
+
+.flatpickr-weekdays {
+    background: var(--bg-elevated);
+}
+
+.flatpickr-weekday {
+    color: var(--text-muted) !important;
+    font-weight: 600;
+}
+
+.flatpickr-weekdays .flatpickr-weekday {
+    color: var(--text-muted) !important;
+}
+
+.flatpickr-days {
+    background: var(--bg-card);
+    border-radius: 0 0 0.5rem 0.5rem;
+}
+
+.flatpickr-day {
+    color: var(--text) !important;
+    border: 1px solid transparent;
+}
+
+.flatpickr-day:hover {
+    background: var(--bg-elevated) !important;
+    border-color: var(--accent) !important;
+}
+
+.flatpickr-day.selected {
+    background: var(--accent) !important;
+    color: var(--bg-card) !important;
+    border-color: var(--accent) !important;
+}
+
+.flatpickr-day.today {
+    border-color: var(--accent) !important;
+}
+
+.flatpickr-day.inRange {
+    background: var(--bg-elevated) !important;
+    border-color: var(--border) !important;
+}
+
+.flatpickr-day.disabled {
+    color: var(--text-muted) !important;
+    background: var(--bg-deep) !important;
+}
+
+.flatpickr-time {
+    background: var(--bg-card);
+    border-top: 1px solid var(--border);
+    border-radius: 0 0 0.5rem 0.5rem;
+}
+
+.flatpickr-time .numInputWrapper {
+    background: var(--bg-card) !important;
+    color: var(--text) !important;
+    border: 1px solid var(--border) !important;
+}
+
+.flatpickr-time .numInputWrapper:hover {
+    background: var(--bg-elevated) !important;
+}
+
+.flatpickr-time .numInputWrapper input {
+    background: transparent !important;
+    color: var(--text) !important;
+}
+
+/* Additional Flatpickr overrides for stubborn elements */
+.flatpickr-calendar.flatpickr-monthSelect-theme-dark .flatpickr-monthSelect-months .flatpickr-monthSelect-month {
+    background: var(--bg-card) !important;
+    color: var(--text) !important;
+}
+
+.flatpickr-calendar.flatpickr-monthSelect-theme-dark .flatpickr-monthSelect-months .flatpickr-monthSelect-month:hover {
+    background: var(--bg-elevated) !important;
+}
+
+.flatpickr-calendar .flatpickr-monthSelect-months .flatpickr-monthSelect-month {
+    background: var(--bg-card) !important;
+    color: var(--text) !important;
+}
+
+.flatpickr-calendar .flatpickr-monthSelect-months .flatpickr-monthSelect-month:hover {
+    background: var(--bg-elevated) !important;
+}
+
+/* Force override for dropdown arrows */
+.flatpickr-monthDropdown-months {
+    background: var(--bg-card) !important;
+    color: var(--text) !important;
+}
+
+.flatpickr-monthDropdown-months option {
+    background: var(--bg-card) !important;
+    color: var(--text) !important;
+}
+
+/* Override inline styles */
+.flatpickr-calendar[style*="background"] {
+    background: var(--bg-card) !important;
+}
+
+.flatpickr-monthDropdown-cur-month {
+    background: var(--bg-card) !important;
+    color: var(--text) !important;
+}
+
+/* Ensure all dropdown elements are themed */
+.flatpickr-monthDropdown-months,
+.flatpickr-monthDropdown-months option,
+.flatpickr-monthDropdown-cur-month,
+.flatpickr-current-month .flatpickr-monthDropdown,
+.flatpickr-current-month .flatpickr-monthDropdown option {
+    background: var(--bg-card) !important;
+    color: var(--text) !important;
+}
+
+.formula-builder {
+    background: var(--bg-card);
+    border-radius: 0.5rem;
+    padding: 1rem;
+    border: 1px solid var(--border);
+}
+
+.available-metrics,
+.math-operators,
+.formula-display,
+.formula-examples {
+    margin-bottom: 1.5rem;
+}
+
+.metrics-grid,
+.operators-grid,
+.examples-grid {
+    display: grid;
+    gap: 0.5rem;
+}
+
+.metrics-grid {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+
+.operators-grid {
+    grid-template-columns: repeat(3, 1fr);
+    max-width: 300px;
+}
+
+.examples-grid {
+    grid-template-columns: 1fr;
+}
+
+.metric-btn,
+.operator-btn,
+.example-btn {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 0.375rem;
+    background: var(--bg-card);
+    color: var(--text);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.metric-btn:hover,
+.operator-btn:hover,
+.example-btn:hover {
+    background: var(--accent);
+    color: var(--bg-card);
+    border-color: var(--accent);
+    transform: translateY(-1px);
+}
+
+.operator-btn {
+    background: var(--bg-elevated);
+    font-weight: 700;
+    font-size: 1rem;
+    min-height: 2.5rem;
+}
+
+.example-btn {
+    background: var(--bg-elevated);
+    border-color: var(--border);
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.formula-box {
+    background: var(--bg-deep);
+    color: var(--accent);
+    padding: 1rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--border);
+    font-family: 'Courier New', monospace;
+    font-size: 1.1rem;
+    min-height: 3rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.formula-text {
+    flex: 1;
+    word-break: break-all;
+}
+
+.formula-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-left: 1rem;
+    align-items: center;
+}
+
+.validation-status {
+    display: flex;
+    align-items: center;
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-right: 0.5rem;
+}
+
+.validation-status.valid {
+    color: #10b981;
+}
+
+.validation-status.invalid {
+    color: #ef4444;
+}
+
+.validation-status.neutral {
+    color: #6b7280;
+}
+
+.validation-message {
+    margin-top: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    padding: 0.5rem;
+    border-radius: 0.375rem;
+    display: none;
+}
+
+.validation-message.valid {
+    background: #d1fae5;
+    color: #065f46;
+    border: 1px solid #10b981;
+    display: block;
+}
+
+.validation-message.invalid {
+    background: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #ef4444;
+    display: block;
+}
+
+.category-header {
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.category-header i {
+    width: 1rem;
+    text-align: center;
+}
+
+.form-select {
+    font-size: 0.9rem;
+}
+
+optgroup {
+    font-weight: 600;
+    color: var(--text-muted);
+    background: var(--bg-card);
+}
+
+option {
+    font-weight: 400;
+    color: var(--text);
+    padding: 0.5rem;
+    background: var(--bg-card);
+}
+
+.form-check {
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: flex-start;
+    flex: 1;
+    min-width: 0;
+}
+
+.form-check-input {
+    width: 1.25rem;
+    height: 1.25rem;
+    border: 2px solid #d1d5db;
+    border-radius: 0.375rem;
+    flex-shrink: 0;
+    margin-top: 0.125rem;
+}
+
+.form-check-input:checked {
+    background-color: var(--secondary-color);
+    border-color: var(--secondary-color);
+}
+
+.form-check-label {
+    font-size: 0.95rem;
+    color: var(--text-muted);
+    margin-left: 0.5rem;
+    cursor: pointer;
+    flex: 1;
+    min-width: 0;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+.row-header {
+    background: var(--bg-elevated);
+    padding: 1rem;
+    border-radius: 0.5rem;
+    margin-bottom: 1rem;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.strategy-info {
+    background: var(--bg-elevated);
+    border-left: 4px solid var(--accent);
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+}
+
+.strategy-info h5 {
+    color: var(--text);
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.strategy-info p {
+    color: var(--text-muted);
+    font-size: 1rem;
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+}
+
+.strategy-info ul {
+    list-style: none;
+    padding: 0;
+}
+
+.strategy-info li {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    margin-bottom: 0.75rem;
+    padding-left: 1.5rem;
+    position: relative;
+    line-height: 1.5;
+}
+
+.strategy-info li strong {
+    color: var(--text);
+    font-weight: 600;
+}
+
+.btn-secondary {
+    background: var(--bg-card);
+    color: var(--text);
+    border: 2px solid var(--border);
+    border-radius: 0.75rem;
+    padding: 0.875rem 2rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+    background: var(--bg-elevated);
+    border-color: var(--accent);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+}
+
+.btn-sm {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-sm:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.btn-outline-primary {
+    color: var(--secondary-color);
+    border-color: var(--secondary-color);
+    background: transparent;
+}
+
+.btn-outline-primary:hover {
+    color: white;
+    background-color: var(--secondary-color);
+    border-color: var(--secondary-color);
+}
+
+.btn-outline-secondary {
+    color: #6b7280;
+    border-color: #d1d5db;
+    background: transparent;
+}
+
+.btn-outline-secondary:hover {
+    color: #374151;
+    background-color: #f3f4f6;
+    border-color: #9ca3af;
+}
+
+.is-invalid {
+    border-color: #dc3545 !important;
+}
+
+.invalid-feedback {
+    color: #dc3545;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+}
+
+.submit-section {
+    margin-top: 3rem;
+    padding: 2rem;
+    background: var(--bg-elevated);
+    border-radius: 1rem;
+    margin-left: 0;
+    margin-right: 0;
+    border: 1px solid var(--border);
+}
+
+/* Form alignment fixes */
+.form-group {
+    margin-bottom: 1.5rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group.metric-toggle {
+    display: block;
+}
+
+.form-group label {
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    min-height: 1.5rem;
+}
+
+.form-group label i {
+    margin-right: 0.5rem;
+    width: 1rem;
+    text-align: center;
+}
+
+.form-control, .form-select {
+    border: 2px solid var(--border);
+    border-radius: 0.75rem;
+    padding: 0.875rem 1rem;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    height: 3rem;
+    line-height: 1.5;
+    background: var(--bg-card);
+    color: var(--text);
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent);
+    outline: none;
+}
+
+.input-group {
+    display: flex;
+    align-items: stretch;
+}
+
+.input-group .form-control {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    flex: 1;
+}
+
+.input-group-text {
+    background: var(--bg-elevated);
+    border: 2px solid var(--border);
+    border-right: none;
+    border-radius: 0.75rem 0 0 0.75rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    padding: 0 1rem;
+    min-width: 4rem;
+    justify-content: center;
+    white-space: nowrap;
+}
+
+.input-group-text:last-child {
+    border-right: 2px solid var(--border-color);
+    border-left: none;
+    border-radius: 0 0.75rem 0.75rem 0;
+    min-width: 4rem;
+}
+
+.form-text {
+    margin-top: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--text-muted);
+}
+
+/* Ensure consistent row spacing */
+.row {
+    margin-bottom: 1.5rem;
+}
+
+.row:last-child {
+    margin-bottom: 0;
+}
+
+/* Enhanced grid system for better space utilization */
+@media (min-width: 1200px) {
+    .container-xl {
+        max-width: 1800px;
+    }
+}
+
+/* Wider form layouts */
+.form-row-xl {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 2rem;
+    align-items: start;
+}
+
+@media (max-width: 1200px) {
+    .form-row-xl {
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .form-row-xl {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+}
+
+/* Enhanced card layouts */
+.wide-card {
+    margin-left: 0;
+    margin-right: 0;
+}
+
+.wide-card .card-body {
+    padding: 2.5rem;
+}
+
+@media (min-width: 1400px) {
+    .wide-card .card-body {
+        padding: 3rem;
+    }
+}
+
+/* Additional theme-aware components */
+.ranking-metric-grid {
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    padding: 1rem;
+    background: var(--bg-elevated);
+}
+
+.metric-row {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.metric-row:last-child {
+    margin-bottom: 0;
+}
+
+.metric-title {
+    flex: 1;
+    min-width: 140px;
+}
+
+.metric-option {
+    flex: 1;
+}
+
+.metric-toggle {
+    flex: 1;
+}
+
+.metric-data {
+    flex: 1;
+}
+
+.metric-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 0.75rem 0;
+}
+
+.metric-label {
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 0;
+    white-space: nowrap;
+    display: block;
+    padding-top: 0.375rem;
+}
+
+.metric-section {
+    margin-bottom: 0;
+    background: var(--bg-elevated);
+    border-radius: 0.75rem;
+    padding: 1rem;
+    border: 1px solid var(--border);
+}
+
+
+.metrics-category {
+    margin-bottom: 1rem;
+}
+
+.metrics-category:last-child {
+    margin-bottom: 0;
+}
+
+.category-title {
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.metrics-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+}
+
+.metric-item {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: 500;
+    display: inline-block;
+}
+
+.submit-section {
+    margin-top: 3rem;
+    padding: 2rem;
+    background: var(--bg-elevated);
+    border-radius: 1rem;
+    margin-left: 0;
+    margin-right: 0;
+    border: 1px solid var(--border);
+}
+
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="hero-section">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1><i class="fas fa-chart-line"></i> Backtest Configuration</h1>
+                <p>Configure your equity long/short strategy with comprehensive fundamental analysis criteria</p>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <a href="{% url 'strategies:equity_long_short_home' %}" class="btn btn-light">
+                    <i class="fas fa-arrow-left"></i> Back to Strategy
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+    <div class="container container-xl">
+    <form method="post" id="backtestForm">
+        {% csrf_token %}
+        
+        <!-- Basic Configuration -->
+        <div class="config-card wide-card">
+            <div class="card-header">
+                <h3><i class="fas fa-cog"></i> Basic Configuration</h3>
+            </div>
+            <div class="card-body">
+                <div class="form-row-xl">
+                    <div>
+                        <div class="form-group">
+                            <label for="name"><i class="fas fa-tag"></i> Backtest Name</label>
+                            <input type="text" class="form-control" id="name" name="name" required 
+                                   placeholder="e.g., Value Strategy Q1 2024">
+                        </div>
+                    </div>
+                    <div>
+                        <div class="form-group">
+                            <label for="start_date"><i class="fas fa-calendar-alt"></i> Start Date</label>
+                            <input type="text" class="form-control" id="start_date" name="start_date" 
+                                   value="01/01/2020" placeholder="DD/MM/YYYY" pattern="\d{2}/\d{2}/\d{4}" required>
+                            <small class="form-text text-muted">Format: DD/MM/YYYY</small>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="form-group">
+                            <label for="end_date"><i class="fas fa-calendar-check"></i> End Date</label>
+                            <input type="text" class="form-control" id="end_date" name="end_date" 
+                                   value="31/12/2024" placeholder="DD/MM/YYYY" pattern="\d{2}/\d{2}/\d{4}" required>
+                            <small class="form-text text-muted">Format: DD/MM/YYYY</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-row-xl">
+                    <div>
+                        <div class="form-group">
+                            <label for="total_stocks_holding"><i class="fas fa-briefcase"></i> Stocks per Position (Long/Short)</label>
+                            <input type="number" class="form-control" id="total_stocks_holding" name="total_stocks_holding" 
+                                   value="20" min="1" max="50" step="1" required>
+                            <small class="form-text text-muted">Number of stocks for each position (total = 2x this amount)</small>
+                        </div>
+                    </div>
+                    <div style="grid-column: span 2;">
+                        <div class="form-group">
+                            <div class="ranking-metric-grid">
+                                <!-- Row 1: Title + Option -->
+                                <div class="metric-row">
+                                    <div class="metric-title">
+                                        <label class="metric-label"><i class="fas fa-sort-amount-down"></i> Ranking Metric</label>
+                                    </div>
+                                    <div class="metric-option">
+                                        <select class="form-select form-select-sm" id="ranking_order" name="ranking_order">
+                                            <option value="descending">Descending (High to Low)</option>
+                                            <option value="ascending">Ascending (Low to High)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <!-- Divider -->
+                                <div class="metric-divider"></div>
+                                
+                                <!-- Row 2: Toggle + Financial Data -->
+                                <div class="metric-row">
+                                    <div class="metric-toggle">
+                                        <div class="metric-type-selector">
+                                            <div class="btn-group" role="group">
+                                                <input type="radio" class="btn-check" name="metric_type" id="preset_metric" value="preset" checked>
+                                                <label class="btn btn-outline-primary" for="preset_metric">
+                                                    <i class="fas fa-list"></i> Preset
+                                                </label>
+                                                
+                                                <input type="radio" class="btn-check" name="metric_type" id="custom_metric" value="custom">
+                                                <label class="btn btn-outline-primary" for="custom_metric">
+                                                    <i class="fas fa-calculator"></i> Custom
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="metric-data">
+                                        <select class="form-select form-select-sm" id="ranking_metric" name="ranking_metric" required>
+                                                <optgroup label="Income Statement">
+                                                    <option value="revenue">Revenue</option>
+                                                    <option value="net_income">Net Income</option>
+                                                    <option value="gross_profit">Gross Profit</option>
+                                                    <option value="operating_income">Operating Income</option>
+                                                    <option value="ebitda">EBITDA</option>
+                                                    <option value="earnings_per_share_basic">Earnings Per Share (EPS)</option>
+                                                    <option value="gross_profit_margin">Gross Profit Margin</option>
+                                                    <option value="operating_margin">Operating Margin</option>
+                                                    <option value="net_profit_margin">Net Profit Margin</option>
+                                                    <option value="revenue_growth">Revenue Growth</option>
+                                                    <option value="earnings_growth">Earnings Growth</option>
+                                                </optgroup>
+                                                
+                                                <optgroup label="Balance Sheet">
+                                                    <option value="total_assets">Total Assets</option>
+                                                    <option value="total_liabilities">Total Liabilities</option>
+                                                    <option value="total_equity">Total Equity</option>
+                                                    <option value="total_current_assets">Current Assets</option>
+                                                    <option value="total_current_liabilities">Current Liabilities</option>
+                                                    <option value="cash_and_equivalents">Cash & Equivalents</option>
+                                                    <option value="property_plant_equipment">Property, Plant & Equipment</option>
+                                                    <option value="goodwill">Goodwill</option>
+                                                    <option value="intangible_assets">Intangible Assets</option>
+                                                    <option value="retained_earnings">Retained Earnings</option>
+                                                </optgroup>
+                                                
+                                                <optgroup label="Cash Flow">
+                                                    <option value="net_cash_from_operating_activities">Operating Cash Flow</option>
+                                                    <option value="net_cash_from_investing_activities">Investing Cash Flow</option>
+                                                    <option value="net_cash_from_financing_activities">Financing Cash Flow</option>
+                                                    <option value="capital_expenditures">Capital Expenditures</option>
+                                                    <option value="free_cash_flow">Free Cash Flow</option>
+                                                    <option value="cash_conversion_cycle">Cash Conversion Cycle</option>
+                                                </optgroup>
+                                                
+                                                <optgroup label="Financial Ratios">
+                                                    <option value="pe_ratio">P/E Ratio</option>
+                                                    <option value="pb_ratio">P/B Ratio</option>
+                                                    <option value="roe">Return on Equity (ROE)</option>
+                                                    <option value="roa">Return on Assets (ROA)</option>
+                                                    <option value="debt_to_equity">Debt to Equity</option>
+                                                    <option value="current_ratio">Current Ratio</option>
+                                                    <option value="quick_ratio">Quick Ratio</option>
+                                                    <option value="debt_to_assets">Debt to Assets</option>
+                                                </optgroup>
+                                            </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Custom Formula Builder (New Row) -->
+        <div id="custom-metrics-section" class="config-card wide-card" style="display: none;">
+            <div class="card-header">
+                <h3><i class="fas fa-calculator"></i> Custom Formula Builder</h3>
+            </div>
+            <div class="card-body">
+                <div class="formula-builder">
+                    <div class="category-header">
+                        <i class="fas fa-calculator text-success"></i> Build Custom Formula
+                    </div>
+                    
+                    <!-- Formula Display Row -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <label class="form-label">Your Formula:</label>
+                            <div class="formula-box">
+                                <div class="formula-text" id="formula-text">Click metrics and operators to build formula</div>
+                                <div class="formula-actions">
+                                    <div class="validation-status" id="validation-status">
+                                        <i class="fas fa-circle"></i>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" id="clear-formula">
+                                        <i class="fas fa-times"></i> Clear
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-warning" id="backspace-formula">
+                                        <i class="fas fa-backspace"></i> Backspace
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="validation-message" id="validation-message"></div>
+                            <input type="hidden" id="custom_formula" name="custom_formula" value="">
+                        </div>
+                    </div>
+                    
+                    <!-- Available Metrics Row -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label">Available Metrics:</label>
+                            <div class="metrics-grid">
+                                <button type="button" class="metric-btn" data-metric="revenue">Revenue</button>
+                                <button type="button" class="metric-btn" data-metric="net_income">Net Income</button>
+                                <button type="button" class="metric-btn" data-metric="gross_profit">Gross Profit</button>
+                                <button type="button" class="metric-btn" data-metric="operating_income">Operating Income</button>
+                                <button type="button" class="metric-btn" data-metric="ebitda">EBITDA</button>
+                                <button type="button" class="metric-btn" data-metric="earnings_per_share_basic">EPS</button>
+                                <button type="button" class="metric-btn" data-metric="total_assets">Total Assets</button>
+                                <button type="button" class="metric-btn" data-metric="total_liabilities">Total Liabilities</button>
+                                <button type="button" class="metric-btn" data-metric="total_equity">Total Equity</button>
+                                <button type="button" class="metric-btn" data-metric="current_assets">Current Assets</button>
+                                <button type="button" class="metric-btn" data-metric="current_liabilities">Current Liabilities</button>
+                                <button type="button" class="metric-btn" data-metric="operating_cash_flow">Operating Cash Flow</button>
+                                <button type="button" class="metric-btn" data-metric="investing_cash_flow">Investing Cash Flow</button>
+                                <button type="button" class="metric-btn" data-metric="financing_cash_flow">Financing Cash Flow</button>
+                                <button type="button" class="metric-btn" data-metric="pe_ratio">P/E Ratio</button>
+                                <button type="button" class="metric-btn" data-metric="pb_ratio">P/B Ratio</button>
+                                <button type="button" class="metric-btn" data-metric="roe">ROE</button>
+                                <button type="button" class="metric-btn" data-metric="roa">ROA</button>
+                                <button type="button" class="metric-btn" data-metric="debt_to_equity">Debt to Equity</button>
+                                <button type="button" class="metric-btn" data-metric="current_ratio">Current Ratio</button>
+                            </div>
+                        </div>
+                        
+                        <!-- Math Operators Column -->
+                        <div class="col-md-6">
+                            <label class="form-label">Math Operators:</label>
+                            <div class="operators-grid">
+                                <button type="button" class="operator-btn" data-operator="+">+</button>
+                                <button type="button" class="operator-btn" data-operator="-">−</button>
+                                <button type="button" class="operator-btn" data-operator="*">×</button>
+                                <button type="button" class="operator-btn" data-operator="/">÷</button>
+                                <button type="button" class="operator-btn" data-operator="(">(</button>
+                                <button type="button" class="operator-btn" data-operator=")">)</button>
+                            </div>
+                            
+                            <!-- Formula Examples -->
+                            <div class="formula-examples mt-4">
+                                <label class="form-label">Examples:</label>
+                                <div class="examples-grid">
+                                    <button type="button" class="example-btn" data-formula="net_income / total_assets">ROA (Net Income ÷ Total Assets)</button>
+                                    <button type="button" class="example-btn" data-formula="operating_income / revenue">Operating Margin</button>
+                                    <button type="button" class="example-btn" data-formula="(current_assets - current_liabilities) / total_assets">Current Ratio to Assets</button>
+                                    <button type="button" class="example-btn" data-formula="operating_cash_flow / net_income">Cash Flow to Income</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filtering Criteria -->
+        <div class="config-card wide-card">
+            <div class="card-header">
+                <h3><i class="fas fa-filter"></i> Filtering Criteria</h3>
+            </div>
+            <div class="card-body">
+                <div class="row-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span>
+                            <i class="fas fa-industry"></i> Sector Selection
+                        </span>
+                        <button type="button" class="btn btn-sm btn-outline-primary" id="toggleAllSectors">
+                            <i class="fas fa-check-square"></i> All
+                        </button>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-12">
+                        <div class="sector-grid">
+                            {% for sector in sectors %}
+                            <div class="sector-item">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="sectors" 
+                                           value="{{ sector.name }}" id="sector_{{ forloop.counter }}" checked>
+                                    <label class="form-check-label sector-name" for="sector_{{ forloop.counter }}">
+                                        {{ sector.name }}
+                                    </label>
+                                </div>
+                                <span class="sector-count">{{ sector.stock_count|intcomma }}</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-row-xl">
+                    <div>
+                        <div class="row-header">
+                            <i class="fas fa-chart-bar"></i> Market Capitalization
+                        </div>
+                        <div class="form-group">
+                            <label for="min_market_cap">Minimum Market Cap</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="min_market_cap" name="min_market_cap" 
+                                       value="10" min="0" step="0.1">
+                                <div class="input-group-text">B USD</div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="max_market_cap">Maximum Market Cap</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="max_market_cap" name="max_market_cap" 
+                                       value="1000" min="0" step="1">
+                                <div class="input-group-text">B USD</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="row-header">
+                            <i class="fas fa-dollar-sign"></i> Price Range
+                        </div>
+                        <div class="form-group">
+                            <label for="min_stock_price">Minimum Stock Price</label>
+                            <div class="input-group">
+                                <div class="input-group-text">$</div>
+                                <input type="number" class="form-control" id="min_stock_price" name="min_stock_price" 
+                                       value="5" min="0" step="0.01">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="max_stock_price">Maximum Stock Price</label>
+                            <div class="input-group">
+                                <div class="input-group-text">$</div>
+                                <input type="number" class="form-control" id="max_stock_price" name="max_stock_price" 
+                                       value="1000" min="0" step="1">
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="row-header">
+                            <i class="fas fa-chart-line"></i> Volume Range
+                        </div>
+                        <div class="form-group">
+                            <label for="min_volume">Minimum Volume</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="min_volume" name="min_volume" 
+                                       value="500" min="0" step="0.01">
+                                <div class="input-group-text">M shares</div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="max_volume">Maximum Volume</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="max_volume" name="max_volume" 
+                                       value="100000" min="0" step="0.1">
+                                <div class="input-group-text">M shares</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Strategy Description -->
+        <div class="config-card wide-card">
+            <div class="card-header">
+                <h3><i class="fas fa-info-circle"></i> Strategy Overview</h3>
+            </div>
+            <div class="card-body">
+                <div class="strategy-info">
+                    <h5><i class="fas fa-lightbulb"></i> How This Strategy Works</h5>
+                    <p class="mb-3">This equity long/short strategy implements a systematic approach to fundamental investing:</p>
+                    <ul>
+                        <li><i class="fas fa-filter text-primary"></i> <strong>Filter Universe:</strong> Apply your selected criteria to identify eligible stocks</li>
+                        <li><i class="fas fa-sort-amount-down text-primary"></i> <strong>Rank Stocks:</strong> Sort by the selected fundamental metric on the first day of each month</li>
+                        <li><i class="fas fa-arrow-up text-success"></i> <strong>Long Positions:</strong> Invest in top <span id="long-positions-count">20</span> of ranked stocks</li>
+                        <li><i class="fas fa-arrow-down text-danger"></i> <strong>Short Positions:</strong> Short bottom <span id="short-positions-count">20</span> of ranked stocks</li>
+                        <li><i class="fas fa-sync text-info"></i> <strong>Monthly Rebalancing:</strong> Rebalance portfolio on first trading day of each month</li>
+                        <li><i class="fas fa-chart-bar text-warning"></i> <strong>Performance Analysis:</strong> Compare results against S&P 500 benchmark</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="config-card wide-card">
+            <div class="card-body">
+                <div class="submit-section">
+                    <div class="row">
+                        <div class="col-12 text-center">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-play"></i> Run Backtest
+                            </button>
+                            <a href="{% url 'strategies:equity_long_short_home' %}" class="btn btn-secondary btn-lg ms-3">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
+<script>
+$(document).ready(function() {
+    // Initialize date pickers
+    const startPicker = flatpickr("#start_date", {
+        dateFormat: "d/m/Y",
+        allowInput: true,
+        maxDate: "today",
+        onChange: function(selectedDates, dateStr, instance) {
+            // Update end date min date to be after start date
+            endPicker.set('minDate', selectedDates[0]);
+        }
+    });
+    
+    const endPicker = flatpickr("#end_date", {
+        dateFormat: "d/m/Y",
+        allowInput: true,
+        minDate: "01/01/2020",
+        maxDate: "today"
+    });
+    
+    $('#toggleAllSectors').click(function() {
+        const $checkboxes = $('input[name="sectors"]');
+        const $button = $(this);
+        
+        if ($checkboxes.filter(':checked').length === $checkboxes.length) {
+            // All are checked, uncheck all
+            $checkboxes.prop('checked', false);
+            $button.html('<i class="fas fa-square"></i> All');
+            $button.removeClass('btn-outline-primary').addClass('btn-outline-secondary');
+        } else {
+            // Some or none are checked, check all
+            $checkboxes.prop('checked', true);
+            $button.html('<i class="fas fa-check-square"></i> All');
+            $button.removeClass('btn-outline-secondary').addClass('btn-outline-primary');
+        }
+    });
+    
+    // Update button when individual checkboxes change
+    $('input[name="sectors"]').change(function() {
+        const $checkboxes = $('input[name="sectors"]');
+        const $button = $('#toggleAllSectors');
+        
+        if ($checkboxes.filter(':checked').length === $checkboxes.length) {
+            $button.html('<i class="fas fa-check-square"></i> All');
+            $button.removeClass('btn-outline-secondary').addClass('btn-outline-primary');
+        } else {
+            $button.html('<i class="fas fa-square"></i> All');
+            $button.removeClass('btn-outline-primary').addClass('btn-outline-secondary');
+        }
+    });
+    
+    // Date parsing and validation functions for DD/MM/YYYY format
+    function parseDDMMYYYY(dateString) {
+        const regex = /^(\d{2})\/(\d{2})\/(\d{4})$/;
+        if (!regex.test(dateString)) return null;
+        
+        const parts = dateString.split('/');
+        const day = parseInt(parts[0], 10);
+        const month = parseInt(parts[1], 10);
+        const year = parseInt(parts[2], 10);
+        
+        // Create date object (month is 0-indexed in JavaScript)
+        const date = new Date(year, month - 1, day);
+        
+        // Validate the date
+        return date.getDate() === day && 
+               date.getMonth() === month - 1 && 
+               date.getFullYear() === year ? date : null;
+    }
+    
+    function formatDDMMYYYY(date) {
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        return `${day}/${month}/${year}`;
+    }
+    
+    function isValidDate(dateString) {
+        return parseDDMMYYYY(dateString) !== null;
+    }
+    
+    // Auto-format date input as user types
+    function formatDateInput(input) {
+        let value = input.value.replace(/\D/g, ''); // Remove non-digits
+        let formattedValue = '';
+        
+        if (value.length >= 2) {
+            formattedValue += value.substring(0, 2);
+            if (value.length >= 4) {
+                formattedValue += '/' + value.substring(2, 4);
+                if (value.length >= 6) {
+                    formattedValue += '/' + value.substring(4, 8);
+                } else {
+                    formattedValue += '/' + value.substring(4);
+                }
+            } else {
+                formattedValue += '/' + value.substring(2);
+            }
+        } else {
+            formattedValue = value;
+        }
+        
+        input.value = formattedValue;
+    }
+    
+    // Apply date formatting to date inputs
+    $('#start_date, #end_date').on('input', function() {
+        formatDateInput($(this)[0]);
+    });
+    
+    // Validate dates on blur
+    $('#start_date, #end_date').on('blur', function() {
+        const dateValue = $(this).val();
+        if (dateValue && !isValidDate(dateValue)) {
+            $(this).addClass('is-invalid');
+            $(this).siblings('.invalid-feedback').remove();
+            $(this).after('<div class="invalid-feedback">Please enter a valid date in DD/MM/YYYY format</div>');
+        } else {
+            $(this).removeClass('is-invalid');
+            $(this).siblings('.invalid-feedback').remove();
+        }
+    });
+    
+    // Form validation
+    $('#backtestForm').on('submit', function(e) {
+        // Validate dates in DD/MM/YYYY format
+        const startDateString = $('#start_date').val();
+        const endDateString = $('#end_date').val();
+        
+        if (!isValidDate(startDateString) || !isValidDate(endDateString)) {
+            e.preventDefault();
+            alert('Please enter valid dates in DD/MM/YYYY format');
+            return false;
+        }
+        
+        const startDate = parseDDMMYYYY(startDateString);
+        const endDate = parseDDMMYYYY(endDateString);
+        
+        if (startDate >= endDate) {
+            e.preventDefault();
+            alert('End date must be after start date');
+            return false;
+        }
+        
+        // Convert dates to DD/MM/YYYY format for backend processing
+        $('#start_date').val(formatDDMMYYYY(startDate));
+        $('#end_date').val(formatDDMMYYYY(endDate));
+        
+        // Validate at least one sector is selected
+        const sectorsSelected = $('input[name="sectors"]:checked').length;
+        if (sectorsSelected === 0) {
+            e.preventDefault();
+            alert('Please select at least one sector');
+            return false;
+        }
+        
+        // Validate ranking metric is selected
+        const rankingMetric = $('#ranking_metric').val();
+        if (!rankingMetric) {
+            e.preventDefault();
+            alert('Please select a ranking metric');
+            return false;
+        }
+        
+        // Show loading state
+        const submitBtn = $(this).find('button[type="submit"]');
+        submitBtn.html('<i class="fas fa-spinner fa-spin"></i> Running Backtest...').prop('disabled', true);
+    });
+    
+    // Format market cap inputs
+    $('#min_market_cap, #max_market_cap').on('blur', function() {
+        const value = parseFloat($(this).val());
+        if (!isNaN(value)) {
+            $(this).val(value.toLocaleString());
+        }
+    });
+    
+    // Custom Formula Builder
+    let currentFormula = [];
+    
+    // Toggle between preset and custom metrics
+    $('input[name="metric_type"]').change(function() {
+        if ($(this).val() === 'custom') {
+            $('#preset-metrics-section').hide();
+            $('#custom-metrics-section').show();
+            $('#ranking_metric').prop('required', false);
+            $('#custom_formula').prop('required', true);
+        } else {
+            $('#preset-metrics-section').show();
+            $('#custom-metrics-section').hide();
+            $('#ranking_metric').prop('required', true);
+            $('#custom_formula').prop('required', false);
+        }
+    });
+    
+    // Add metric to formula
+    $('.metric-btn').click(function() {
+        const metric = $(this).data('metric');
+        addToFormula(metric);
+    });
+    
+    // Add operator to formula
+    $('.operator-btn').click(function() {
+        const operator = $(this).data('operator');
+        addToFormula(operator);
+    });
+    
+    // Add example formula
+    $('.example-btn').click(function() {
+        const formula = $(this).data('formula');
+        currentFormula = formula.split(' ');
+        updateFormulaDisplay();
+    });
+    
+    // Clear formula
+    $('#clear-formula').click(function() {
+        currentFormula = [];
+        updateFormulaDisplay();
+    });
+    
+    // Backspace
+    $('#backspace-formula').click(function() {
+        currentFormula.pop();
+        updateFormulaDisplay();
+    });
+    
+    function addToFormula(item) {
+        currentFormula.push(item);
+        updateFormulaDisplay();
+    }
+    
+    function updateFormulaDisplay() {
+        const formulaText = currentFormula.length > 0 ? currentFormula.join(' ') : 'Click metrics and operators to build formula';
+        $('#formula-text').text(formulaText);
+        $('#custom_formula').val(currentFormula.join(' '));
+        
+        // Real-time validation
+        validateFormulaRealtime();
+    }
+    
+    function validateFormulaRealtime() {
+        const formula = currentFormula.join(' ');
+        const $formulaBox = $('.formula-box');
+        const $formulaText = $('#formula-text');
+        const $validationStatus = $('#validation-status');
+        const $validationMessage = $('#validation-message');
+        
+        if (formula.length === 0) {
+            // Empty formula - neutral state
+            $formulaBox.css('border-color', '#374151');
+            $formulaText.css('color', '#10b981');
+            $validationStatus.removeClass('valid invalid').addClass('neutral').html('<i class="fas fa-circle"></i> Ready');
+            $validationMessage.removeClass('valid invalid').hide();
+            return;
+        }
+        
+        const validation = isValidFormulaWithEval(formula);
+        
+        if (validation.isValid) {
+            // Valid formula - green border and message
+            $formulaBox.css('border-color', '#10b981');
+            $formulaText.css('color', '#10b981');
+            $validationStatus.removeClass('neutral invalid').addClass('valid').html('<i class="fas fa-check-circle"></i> Valid');
+            
+            const message = `Valid formula with ${validation.metricCount} metric${validation.metricCount > 1 ? 's' : ''} (max 5)`;
+            $validationMessage.removeClass('invalid neutral').addClass('valid').text(message).show();
+        } else {
+            // Invalid formula - red border and error message
+            $formulaBox.css('border-color', '#ef4444');
+            $formulaText.css('color', '#ef4444');
+            $validationStatus.removeClass('neutral valid').addClass('invalid').html('<i class="fas fa-exclamation-circle"></i> Invalid');
+            
+            $validationMessage.removeClass('valid neutral').addClass('invalid').text(validation.error).show();
+        }
+    }
+    
+    function isValidFormulaWithEval(formula) {
+        // Replace metric names with placeholder numbers for eval testing
+        const testFormula = formula.replace(/[a-zA-Z_][a-zA-Z0-9_]*/g, '1');
+        
+        try {
+            // Test if the formula is mathematically valid
+            eval(testFormula);
+            
+            // Count metrics in the original formula
+            const metricCount = (formula.match(/[a-zA-Z_][a-zA-Z0-9_]*/g) || []).length;
+            
+            // Check metric limit
+            if (metricCount > 5) {
+                return {
+                    isValid: false,
+                    error: `Too many metrics (${metricCount}). Maximum 5 metrics allowed.`,
+                    metricCount: metricCount
+                };
+            }
+            
+            return {
+                isValid: true,
+                error: null,
+                metricCount: metricCount
+            };
+        } catch (error) {
+            // If eval throws an error, the formula is invalid
+            return {
+                isValid: false,
+                error: 'Invalid formula syntax',
+                metricCount: 0
+            };
+        }
+    }
+    
+    // Validate custom formula on form submission
+    $('#backtestForm').on('submit', function(e) {
+        const metricType = $('input[name="metric_type"]:checked').val();
+        
+        if (metricType === 'custom') {
+            const formula = $('#custom_formula').val();
+            
+            if (!formula || formula.trim() === '') {
+                e.preventDefault();
+                alert('Please build a custom formula or select a preset metric');
+                return false;
+            }
+            
+            // Use the same eval validation
+            const validation = isValidFormulaWithEval(formula);
+            if (!validation.isValid) {
+                e.preventDefault();
+                alert('Invalid formula syntax. Please check your formula and try again.');
+                return false;
+            }
+        }
+    });
+    
+    // Update position counts when total stock holdings changes
+    function updatePositionCounts() {
+        const stocksPerPosition = parseInt($('#total_stocks_holding').val()) || 20;
+        
+        $('#long-positions-count').text(stocksPerPosition);
+        $('#short-positions-count').text(stocksPerPosition);
+    }
+    
+    // Update counts on page load
+    updatePositionCounts();
+    
+    // Update counts when total stock holdings changes
+    $('#total_stocks_holding').on('input change', function() {
+        updatePositionCounts();
+    });
+});
+</script>
+{% endblock %}

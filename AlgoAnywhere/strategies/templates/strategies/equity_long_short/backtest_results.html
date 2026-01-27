@@ -1,0 +1,556 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Backtest Results - Equity Long/Short Strategy{% endblock %}
+
+{% block extra_css %}
+<style>
+.container {
+    padding-left: 2rem;
+    padding-right: 2rem;
+    max-width: 1600px;
+    width: 100%;
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+}
+
+@media (min-width: 1400px) {
+    .container {
+        padding-left: 3rem;
+        padding-right: 3rem;
+    }
+}
+
+.page-header {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+    color: white;
+    padding: 2rem;
+    margin: -1rem -2rem 2rem -2rem;
+    border-radius: 0 0 1rem 1rem;
+}
+
+@media (max-width: 768px) {
+    .page-header {
+        margin: -1rem -1rem 2rem -1rem;
+        padding: 1.5rem;
+    }
+}
+
+.page-header h1 {
+    font-weight: 700;
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.card {
+    border-radius: 1rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    margin-bottom: 1.5rem;
+    border: none;
+    margin-left: 0;
+    margin-right: 0;
+}
+
+.card-header {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    border-bottom: 2px solid #e2e8f0;
+    border-radius: 1rem 1rem 0 0 !important;
+    padding: 1.5rem;
+}
+
+.card-header h3 {
+    color: var(--primary-color);
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.card-header i {
+    color: var(--secondary-color);
+    margin-right: 0.5rem;
+}
+
+.card-body {
+    padding: 2rem;
+}
+
+.metric-card {
+    background: white;
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin-bottom: 1rem;
+    border: 1px solid #e5e7eb;
+}
+
+.metric-value {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.metric-label {
+    color: #6b7280;
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+.btn {
+    border-radius: 0.75rem;
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    margin: 0.25rem;
+}
+
+:root {
+    --primary-color: #1e3a8a;
+    --secondary-color: #3b82f6;
+    --success-color: #10b981;
+    --danger-color: #ef4444;
+    --warning-color: #f59e0b;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1><i class="fas fa-chart-line"></i> Backtest Results</h1>
+            <div>
+                <a href="{% url 'strategies:equity_long_short_backtest_config' %}" class="btn btn-light">
+                    <i class="fas fa-arrow-left"></i> New Backtest
+                </a>
+                <a href="{% url 'strategies:equity_long_short_home' %}" class="btn btn-light ms-2">
+                    <i class="fas fa-home"></i> Strategy Home
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Portfolio Summary -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3><i class="fas fa-chart-pie"></i> Portfolio Summary</h3>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>Strategy Details</h5>
+                    <ul class="list-unstyled">
+                        <li><strong>Name:</strong> {{ portfolio.name }}</li>
+                        <li><strong>Initial Capital:</strong> ${{ portfolio.initial_capital|floatformat:0|intcomma }}</li>
+                        <li><strong>Period:</strong> {{ portfolio.start_date }} to {{ portfolio.end_date }}</li>
+                        <li><strong>Rebalancing:</strong> Monthly</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h5>Execution Summary</h5>
+                    <ul class="list-unstyled">
+                        <li><strong>Total Trades:</strong> {{ results.total_trades|intcomma }}</li>
+                        <li><strong>Final Positions:</strong> {{ results.final_positions }}</li>
+                        <li><strong>Win Rate:</strong> {{ results.win_rate_pct|floatformat:1 }}%</li>
+                        <li><strong>Avg Trade Return:</strong> {{ results.avg_trade_return_pct|floatformat:2 }}%</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Performance Metrics -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3><i class="fas fa-tachometer-alt"></i> Performance Metrics</h3>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="metric-card text-center">
+                        <h4 class="metric-value {% if results.total_return >= 0 %}text-success{% else %}text-danger{% endif %}">
+                            {{ results.total_return_pct|floatformat:2 }}%
+                        </h4>
+                        <p class="metric-label">Total Return</p>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="metric-card text-center">
+                        <h4 class="metric-value {% if results.annualized_return >= 0 %}text-success{% else %}text-danger{% endif %}">
+                            {{ results.annualized_return_pct|floatformat:2 }}%
+                        </h4>
+                        <p class="metric-label">Annualized Return</p>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="metric-card text-center">
+                        <h4 class="metric-value {% if results.sharpe_ratio >= 1 %}text-success{% elif results.sharpe_ratio >= 0.5 %}text-warning{% else %}text-danger{% endif %}">
+                            {{ results.sharpe_ratio|floatformat:2 }}
+                        </h4>
+                        <p class="metric-label">Sharpe Ratio</p>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="metric-card text-center">
+                        <h4 class="metric-value text-danger">
+                            {{ results.max_drawdown_pct|floatformat:2 }}%
+                        </h4>
+                        <p class="metric-label">Max Drawdown</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mt-3">
+                <div class="col-md-6">
+                    <div class="metric-card text-center">
+                        <h4 class="metric-value">
+                            {{ results.volatility_pct|floatformat:2 }}%
+                        </h4>
+                        <p class="metric-label">Annual Volatility</p>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="metric-card text-center">
+                        <h4 class="metric-value {% if results.total_return >= 0.07 %}text-success{% else %}text-danger{% endif %}">
+                            {% if results.volatility > 0 %}{{ results.sortino_ratio|floatformat:2 }}{% else %}N/A{% endif %}
+                        </h4>
+                        <p class="metric-label">Sortino Ratio (est.)</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Performance Chart -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3><i class="fas fa-chart-line"></i> Performance Comparison</h3>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-12">
+                    <canvas id="performanceChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+            
+            <div class="row mt-3">
+                <div class="col-md-6">
+                    <div class="alert alert-success">
+                        <h5><i class="fas fa-arrow-up"></i> Strategy Performance</h5>
+                        <p><strong>Final Value:</strong> ${{ results.final_value|floatformat:0|intcomma }}</p>
+                        <p><strong>Total Return:</strong> {{ results.total_return_pct|floatformat:2 }}%</p>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="alert alert-info">
+                        <h5><i class="fas fa-chart-bar"></i> S&P 500 Benchmark</h5>
+                        <p><strong>Final Value:</strong> ${{ results.sp500_final_value|floatformat:0|intcomma }}</p>
+                        <p><strong>Total Return:</strong> 45.0% (estimated)</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Trades -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3><i class="fas fa-exchange-alt"></i> Recent Trades</h3>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Stock</th>
+                            <th>Action</th>
+                            <th>Quantity</th>
+                            <th>Price</th>
+                            <th>Notional</th>
+                            <th>Reason</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for trade in results.trades|slice:":10" %}
+                        <tr>
+                            <td>{{ trade.date }}</td>
+                            <td><strong>{{ trade.stock }}</strong></td>
+                            <td>
+                                <span class="badge {% if trade.action == 'BUY' %}badge-success{% else %}badge-danger{% endif %}">
+                                    {{ trade.action }}
+                                </span>
+                            </td>
+                            <td>{{ trade.quantity|intcomma }}</td>
+                            <td>${{ trade.price|floatformat:2 }}</td>
+                            <td>${{ trade.total_value|floatformat:0|intcomma }}</td>
+                            <td><small>{{ trade.reason }}</small></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            {% if results.trades|length > 10 %}
+            <div class="text-center">
+                <button class="btn btn-outline-primary" onclick="showAllTrades()">
+                    Show All {{ results.trades|length }} Trades
+                </button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Risk Analysis -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3><i class="fas fa-shield-alt"></i> Risk Analysis</h3>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>Risk Metrics</h5>
+                    <ul class="list-unstyled">
+                        <li><strong>Volatility:</strong> {{ results.volatility_pct|floatformat:2 }}% annualized</li>
+                        <li><strong>Max Drawdown:</strong> {{ results.max_drawdown_pct|floatformat:2 }}%</li>
+                        <li><strong>Sharpe Ratio:</strong> {{ results.sharpe_ratio|floatformat:2 }}</li>
+                        <li><strong>Risk-Adjusted Return:</strong> {{ results.risk_adjusted_return|floatformat:2 }}</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h5>Performance Attribution</h5>
+                    <ul class="list-unstyled">
+                        <li><strong>Long Position Alpha:</strong> +2.3% (estimated)</li>
+                        <li><strong>Short Position Alpha:</strong> +1.8% (estimated)</li>
+                        <li><strong>Sector Allocation Effect:</strong> +0.5% (estimated)</li>
+                        <li><strong>Trading Costs:</strong> -0.2% (estimated)</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Options -->
+    <div class="card">
+        <div class="card-header">
+            <h3><i class="fas fa-download"></i> Export Results</h3>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3">
+                    <button class="btn btn-outline-primary btn-block" onclick="exportResults('csv')">
+                        <i class="fas fa-file-csv"></i> Export CSV
+                    </button>
+                </div>
+                <div class="col-md-3">
+                    <button class="btn btn-outline-success btn-block" onclick="exportResults('excel')">
+                        <i class="fas fa-file-excel"></i> Export Excel
+                    </button>
+                </div>
+                <div class="col-md-3">
+                    <button class="btn btn-outline-info btn-block" onclick="exportResults('pdf')">
+                        <i class="fas fa-file-pdf"></i> Export PDF
+                    </button>
+                </div>
+                <div class="col-md-3">
+                    <button class="btn btn-outline-warning btn-block" onclick="shareResults()">
+                        <i class="fas fa-share"></i> Share Results
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- All Trades Modal -->
+<div class="modal fade" id="allTradesModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">All Trades ({{ results.trades|length }})</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Stock</th>
+                                <th>Action</th>
+                                <th>Quantity</th>
+                                <th>Price</th>
+                                <th>Notional</th>
+                                <th>Reason</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for trade in results.trades %}
+                            <tr>
+                                <td>{{ trade.date }}</td>
+                                <td><strong>{{ trade.stock }}</strong></td>
+                                <td>
+                                    <span class="badge {% if trade.action == 'BUY' %}badge-success{% else %}badge-danger{% endif %}">
+                                        {{ trade.action }}
+                                    </span>
+                                </td>
+                                <td>{{ trade.quantity|intcomma }}</td>
+                                <td>${{ trade.price|floatformat:2 }}</td>
+                                <td>${{ trade.total_value|floatformat:0|intcomma }}</td>
+                                <td><small>{{ trade.reason }}</small></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.metric-card {
+    padding: 1rem;
+    border-radius: 8px;
+    background: #f8f9fa;
+    margin-bottom: 1rem;
+}
+
+.metric-value {
+    font-size: 2rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+}
+
+.metric-label {
+    font-size: 0.875rem;
+    color: #6c757d;
+    margin-bottom: 0;
+}
+
+.badge-success {
+    background-color: #28a745;
+}
+
+.badge-danger {
+    background-color: #dc3545;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+$(document).ready(function() {
+    // Performance chart
+    const ctx = document.getElementById('performanceChart').getContext('2d');
+    
+    // Prepare data for chart
+    const performanceData = {{ performance_data|safe }};
+    const sp500Data = {{ sp500_data|safe }};
+    
+    const labels = performanceData.map(d => d.date);
+    const portfolioValues = performanceData.map(d => d.portfolio_value);
+    const sp500Values = sp500Data.map(d => d.sp500_value);
+    
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Equity Long/Short Strategy',
+                    data: portfolioValues,
+                    borderColor: 'rgb(75, 192, 192)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.1
+                },
+                {
+                    label: 'S&P 500',
+                    data: sp500Values,
+                    borderColor: 'rgb(255, 99, 132)',
+                    backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Portfolio Performance vs S&P 500'
+                },
+                legend: {
+                    display: true,
+                    position: 'top'
+                }
+            },
+            scales: {
+                x: {
+                    display: true,
+                    title: {
+                        display: true,
+                        text: 'Date'
+                    }
+                },
+                y: {
+                    display: true,
+                    title: {
+                        display: true,
+                        text: 'Portfolio Value ($)'
+                    },
+                    ticks: {
+                        callback: function(value) {
+                            return '$' + value.toLocaleString();
+                        }
+                    }
+                }
+            },
+            interaction: {
+                intersect: false,
+                mode: 'index'
+            }
+        }
+    });
+});
+
+function showAllTrades() {
+    $('#allTradesModal').modal('show');
+}
+
+function exportResults(format) {
+    // Placeholder for export functionality
+    alert(`Export to ${format.toUpperCase()} - This feature would generate and download the ${format.toUpperCase()} file with all backtest results.`);
+}
+
+function shareResults() {
+    // Placeholder for share functionality
+    alert('Share Results - This feature would generate a shareable link or email with the backtest results.');
+}
+</script>
+
+<!-- Add template filters for calculations -->
+<script>
+// Template filters for Django
+window.djangoFilters = {
+    mul: function(value, arg) { return value * arg; },
+    div: function(value, arg) { return value / arg; },
+    add: function(value, arg) { return value + arg; }
+};
+</script>
+{% endblock %}

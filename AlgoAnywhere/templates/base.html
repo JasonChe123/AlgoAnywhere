@@ -59,6 +59,23 @@
           </div>
         </div>
         <a class="header-cta" href="#">Get started</a>
+        <div class="theme-selector">
+          <a href="#" id="theme-toggle" class="theme-link">
+            <i class="fas fa-palette" id="theme-icon"></i>
+            <span id="theme-text">Theme</span>
+          </a>
+          <div class="theme-dropdown" id="theme-dropdown">
+            <a href="#" class="theme-option" data-theme="light">
+              <i class="fas fa-sun"></i> Light
+            </a>
+            <a href="#" class="theme-option" data-theme="dark">
+              <i class="fas fa-moon"></i> Dark
+            </a>
+            <a href="#" class="theme-option" data-theme="system">
+              <i class="fas fa-desktop"></i> Match System
+            </a>
+          </div>
+        </div>
       </nav>
 
       <button type="button" class="nav-mobile-toggle" aria-label="Open menu" data-mobile-toggle>
@@ -162,9 +179,60 @@
         var trigger = root.querySelector('.dropdown-trigger');
         var menu = root.querySelector('.dropdown-menu');
         if (!trigger || !menu) return;
-        root.addEventListener('mouseenter', function() { root.classList.add('active'); trigger.setAttribute('aria-expanded', 'true'); });
-        root.addEventListener('mouseleave', function() { root.classList.remove('active'); trigger.setAttribute('aria-expanded', 'false'); });
+        
+        var hoverTimeout;
+        
+        // Hover functionality with delay
+        root.addEventListener('mouseenter', function() { 
+          clearTimeout(hoverTimeout);
+          root.classList.add('active'); 
+          trigger.setAttribute('aria-expanded', 'true'); 
+        });
+        
+        root.addEventListener('mouseleave', function() { 
+          hoverTimeout = setTimeout(function() {
+            root.classList.remove('active'); 
+            trigger.setAttribute('aria-expanded', 'false'); 
+          }, 100); // 100ms delay before closing
+        });
+        
+        // Also keep open if hovering over menu directly
+        menu.addEventListener('mouseenter', function() {
+          clearTimeout(hoverTimeout);
+        });
+        
+        menu.addEventListener('mouseleave', function() {
+          hoverTimeout = setTimeout(function() {
+            root.classList.remove('active'); 
+            trigger.setAttribute('aria-expanded', 'false'); 
+          }, 100);
+        });
+        
+        // Click functionality for mobile/touch
+        trigger.addEventListener('click', function(e) {
+          e.preventDefault();
+          var isActive = root.classList.contains('active');
+          
+          // Close all other dropdowns
+          document.querySelectorAll('[data-dropdown].active').forEach(function(d) {
+            if (d !== root) {
+              d.classList.remove('active');
+              var t = d.querySelector('.dropdown-trigger');
+              if (t) t.setAttribute('aria-expanded', 'false');
+            }
+          });
+          
+          // Toggle current dropdown
+          if (!isActive) {
+            root.classList.add('active');
+            trigger.setAttribute('aria-expanded', 'true');
+          } else {
+            root.classList.remove('active');
+            trigger.setAttribute('aria-expanded', 'false');
+          }
+        });
       });
+      
       document.addEventListener('click', function(e) {
         if (!e.target.closest('[data-dropdown]')) {
           document.querySelectorAll('[data-dropdown].active').forEach(function(d) {
@@ -195,6 +263,83 @@
           root.querySelector('.dropdown-trigger').setAttribute('aria-expanded', isOpen);
         });
       });
+
+      // Theme Switching Functionality
+      const themeManager = {
+        init() {
+          this.loadTheme();
+          this.setupEventListeners();
+          this.updateSystemTheme();
+        },
+        
+        loadTheme() {
+          const savedTheme = localStorage.getItem('theme') || 'light';
+          this.setTheme(savedTheme);
+          this.updateThemeUI(savedTheme);
+        },
+        
+        setTheme(theme) {
+          document.documentElement.setAttribute('data-theme', theme);
+          localStorage.setItem('theme', theme);
+        },
+        
+        updateThemeUI(theme) {
+          const themeIcon = document.getElementById('theme-icon');
+          const themeText = document.getElementById('theme-text');
+          
+          const iconMap = {
+            'light': 'fas fa-sun',
+            'dark': 'fas fa-moon',
+            'system': 'fas fa-desktop'
+          };
+          
+          const textMap = {
+            'light': 'Light',
+            'dark': 'Dark',
+            'system': 'System'
+          };
+          
+          if (themeIcon) themeIcon.className = iconMap[theme] || iconMap['light'];
+          if (themeText) themeText.textContent = textMap[theme] || textMap['light'];
+        },
+        
+        setupEventListeners() {
+          // Theme dropdown items - only target theme selector items
+          document.querySelectorAll('.theme-option[data-theme]').forEach(item => {
+            item.addEventListener('click', (e) => {
+              e.preventDefault();
+              e.stopPropagation(); // Stop event from bubbling up
+              const theme = e.currentTarget.getAttribute('data-theme');
+              this.setTheme(theme);
+              this.updateThemeUI(theme);
+            });
+          });
+          
+          // Listen for system theme changes
+          window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+            this.updateSystemTheme();
+          });
+        },
+        
+        updateSystemTheme() {
+          const currentTheme = localStorage.getItem('theme');
+          if (currentTheme === 'system') {
+            // Force re-apply system theme
+            this.setTheme('system');
+          }
+        },
+        
+        getCurrentTheme() {
+          const savedTheme = localStorage.getItem('theme') || 'light';
+          if (savedTheme === 'system') {
+            return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+          }
+          return savedTheme;
+        }
+      };
+      
+      // Initialize theme manager
+      themeManager.init();
     })();
   </script>
   {% block extra_js %}{% endblock %}

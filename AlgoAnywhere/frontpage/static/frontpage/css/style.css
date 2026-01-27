@@ -1,7 +1,35 @@
 /* AlgoAnywhere – Hedge Fund Backtesting Platform
    Contemporary, responsive, professional */
 
+/* Theme Variables */
 :root {
+  --primary-color: #1e3a8a;
+  --secondary-color: #3b82f6;
+  --success-color: #10b981;
+  --danger-color: #ef4444;
+}
+
+/* Light theme (default) */
+[data-theme="light"] {
+  --bg-deep: #f8fafc;
+  --bg-card: #ffffff;
+  --bg-elevated: #f1f5f9;
+  --border: rgba(0, 0, 0, 0.08);
+  --text: #1f2937;
+  --text-muted: #6b7280;
+  --accent: #3b82f6;
+  --accent-hover: #2563eb;
+  --gold: #eab308;
+  --success: #10b981;
+  --font: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+  --transition: 0.2s ease;
+}
+
+/* Dark theme */
+[data-theme="dark"] {
   --bg-deep: #0a0e17;
   --bg-card: #111827;
   --bg-elevated: #1a2234;
@@ -19,10 +47,75 @@
   --transition: 0.2s ease;
 }
 
+/* System theme (respects OS preference) */
+@media (prefers-color-scheme: dark) {
+  [data-theme="system"] {
+    --bg-deep: #0a0e17;
+    --bg-card: #111827;
+    --bg-elevated: #1a2234;
+    --border: rgba(255, 255, 255, 0.08);
+    --text: #f1f5f9;
+    --text-muted: #94a3b8;
+    --accent: #06b6d4;
+    --accent-hover: #22d3ee;
+    --gold: #eab308;
+    --success: #10b981;
+    --font: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    --radius: 12px;
+    --radius-sm: 8px;
+    --shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+    --transition: 0.2s ease;
+  }
+}
+
+@media (prefers-color-scheme: light) {
+  [data-theme="system"] {
+    --bg-deep: #f8fafc;
+    --bg-card: #ffffff;
+    --bg-elevated: #f1f5f9;
+    --border: rgba(0, 0, 0, 0.08);
+    --text: #1f2937;
+    --text-muted: #6b7280;
+    --accent: #3b82f6;
+    --accent-hover: #2563eb;
+    --gold: #eab308;
+    --success: #10b981;
+    --font: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    --radius: 12px;
+    --radius-sm: 8px;
+    --shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+    --transition: 0.2s ease;
+  }
+}
+
+/* Default to light theme if no data-theme attribute */
+:root:not([data-theme]) {
+  --bg-deep: #f8fafc;
+  --bg-card: #ffffff;
+  --bg-elevated: #f1f5f9;
+  --border: rgba(0, 0, 0, 0.08);
+  --text: #1f2937;
+  --text-muted: #6b7280;
+  --accent: #3b82f6;
+  --accent-hover: #2563eb;
+  --gold: #eab308;
+  --success: #10b981;
+  --font: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+  --transition: 0.2s ease;
+}
+
 *,
 *::before,
 *::after {
   box-sizing: border-box;
+}
+
+/* Ensure all interactive elements can receive events */
+button, a, input, select, textarea {
+  pointer-events: auto !important;
 }
 
 html {
@@ -37,6 +130,7 @@ body {
   color: var(--text);
   background: var(--bg-deep);
   -webkit-font-smoothing: antialiased;
+  transition: background-color var(--transition), color var(--transition);
 }
 
 a {
@@ -54,11 +148,11 @@ img {
 .site-header {
   position: sticky;
   top: 0;
-  z-index: 100;
-  background: rgba(10, 14, 23, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  z-index: 1002;
+  background: var(--bg-card);
   border-bottom: 1px solid var(--border);
+  transition: background-color var(--transition), border-color var(--transition);
+  pointer-events: auto;
 }
 
 .header-inner {
@@ -69,6 +163,14 @@ img {
   margin: 0 auto;
   padding: 0.875rem 1.5rem;
   gap: 1.5rem;
+  pointer-events: auto;
+}
+
+.nav-desktop {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  pointer-events: auto;
 }
 
 .logo {
@@ -116,12 +218,13 @@ img {
 
 .nav-link:hover {
   color: var(--text);
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--bg-elevated);
 }
 
 /* ---------- Dropdown ---------- */
 .dropdown {
   position: relative;
+  pointer-events: auto;
 }
 
 .dropdown-trigger {
@@ -138,12 +241,13 @@ img {
   cursor: pointer;
   font-family: inherit;
   transition: color var(--transition), background var(--transition);
+  pointer-events: auto;
 }
 
 .dropdown-trigger:hover,
 .dropdown.active .dropdown-trigger {
   color: var(--text);
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--bg-elevated);
 }
 
 .dropdown-trigger::after {
@@ -176,12 +280,16 @@ img {
   visibility: hidden;
   transform: translateY(-4px);
   transition: opacity var(--transition), visibility var(--transition), transform var(--transition);
+  z-index: 1001;
+  display: none;
+  pointer-events: auto;
 }
 
 .dropdown.active .dropdown-menu {
   opacity: 1;
   visibility: visible;
   transform: translateY(0);
+  display: block;
 }
 
 .dropdown-item {
@@ -191,11 +299,12 @@ img {
   color: var(--text-muted);
   border-radius: var(--radius-sm);
   transition: color var(--transition), background var(--transition);
+  pointer-events: auto;
 }
 
 .dropdown-item:hover {
   color: var(--accent);
-  background: rgba(6, 182, 212, 0.1);
+  background: var(--bg-elevated);
 }
 
 /* ---------- CTA in header ---------- */
@@ -217,6 +326,7 @@ img {
     cursor: pointer;
     font-family: inherit;
     transition: background var(--transition), transform var(--transition);
+    pointer-events: auto;
   }
 
   .header-cta:hover {
@@ -534,8 +644,8 @@ main {
 }
 
 .btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.15);
+  background: var(--bg-elevated);
+  border-color: var(--border);
 }
 
 /* ---------- Hero viz placeholder ---------- */
@@ -720,4 +830,94 @@ main {
   margin: 0 0 1.5rem;
   color: var(--text-muted);
   font-size: 0.95rem;
+}
+
+/* ---------- Theme Selector ---------- */
+.theme-selector {
+  position: relative;
+  margin-left: 1rem;
+}
+
+.theme-link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  color: var(--text);
+  font-size: 0.9rem;
+  border-radius: var(--radius-sm);
+  transition: background-color var(--transition), color var(--transition);
+  text-decoration: none;
+}
+
+.theme-link:hover {
+  background-color: var(--bg-elevated);
+  color: var(--accent);
+}
+
+.theme-link i {
+  font-size: 0.9rem;
+}
+
+.theme-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  min-width: 160px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: opacity var(--transition), visibility var(--transition), transform var(--transition);
+  z-index: 999;
+  padding: 0.5rem 0;
+  margin-top: 0.25rem;
+}
+
+.theme-selector:hover .theme-dropdown,
+.theme-dropdown:hover {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.theme-option {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 1rem;
+  color: var(--text);
+  font-size: 0.9rem;
+  text-decoration: none;
+  transition: background-color var(--transition);
+}
+
+.theme-option:hover {
+  background-color: var(--bg-elevated);
+  color: var(--accent);
+}
+
+.theme-option i {
+  width: 1rem;
+  text-align: center;
+  font-size: 0.85rem;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .theme-selector {
+    margin-left: 0.5rem;
+  }
+  
+  .theme-link {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.85rem;
+  }
+  
+  .theme-dropdown {
+    min-width: 140px;
+  }
 }

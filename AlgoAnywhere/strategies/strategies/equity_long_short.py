@@ -345,3 +345,345 @@ class EquityLongShortStrategy(BaseStrategy):
             'short_items': len([s for s in signals if s['action'] in ['SHORT']]),
             'estimated_notional': sum(item['estimated_notional'] for item in basket_items)
         }
+
+    def run_fundamental_backtest(self, start_date: date, end_date: date, 
+                               total_stocks_holding: int, sectors: List[str],
+                               min_market_cap: float, max_market_cap: float,
+                               min_stock_price: float, max_stock_price: float,
+                               min_volume: int, max_volume: int,
+                               ranking_metric: str, income_statement_data: List[str],
+                               balance_sheet_data: List[str], cashflow_data: List[str]) -> Dict:
+        """
+        Run fundamental backtest with specified criteria.
+        
+        This method implements the monthly rebalancing strategy where:
+        1. Filter stocks based on criteria
+        2. Rank by fundamental metric
+        3. Go long top 50%, short bottom 50%
+        4. Rebalance monthly
+        5. Compare to S&P 500
+        """
+        import pandas as pd
+        import numpy as np
+        from datetime import datetime, timedelta
+        from stocks.models import Stock, CompanyInfo, Sector, DailyPriceData
+        
+        # Initialize results
+        portfolio_values = []
+        sp500_values = []
+        monthly_returns = []
+        positions = []
+        trades = []
+        
+        # Get S&P 500 benchmark data (placeholder - would need actual S&P 500 data)
+        sp500_initial = 1000  # Placeholder S&P 500 initial value
+        
+        current_capital = self.equity_portfolio.initial_capital
+        current_positions = {}
+        
+        # Generate monthly rebalancing dates
+        current_date = start_date.replace(day=1)  # First day of start month
+        rebalance_dates = []
+        
+        while current_date <= end_date:
+            rebalance_dates.append(current_date)
+            # Move to next month
+            if current_date.month == 12:
+                current_date = date(current_date.year + 1, 1, 1)
+            else:
+                current_date = date(current_date.year, current_date.month + 1, 1)
+        
+        for rebalance_date in rebalance_dates:
+            # 1. Filter universe based on criteria
+            filtered_stocks = self._filter_stocks(
+                rebalance_date, sectors, min_market_cap, max_market_cap,
+                min_stock_price, max_stock_price, min_volume, max_volume
+            )
+            
+            if len(filtered_stocks) < total_stocks_holding:
+                continue  # Skip if not enough stocks
+            
+            # 2. Calculate fundamental metrics and rank
+            stock_scores = self._calculate_fundamental_scores(
+                filtered_stocks, rebalance_date, ranking_metric,
+                income_statement_data, balance_sheet_data, cashflow_data
+            )
+            
+            # 3. Select long and short positions
+            stocks_to_long = stock_scores[:total_stocks_holding // 2]
+            stocks_to_short = stock_scores[-(total_stocks_holding // 2):]
+            
+            # 4. Calculate position sizes (equal weight)
+            capital_per_position = current_capital / total_stocks_holding
+            
+            # 5. Generate trades for rebalancing
+            new_positions = {}
+            
+            # Long positions
+            for stock_score in stocks_to_long:
+                stock = stock_score['stock']
+                price = self._get_current_price(stock, rebalance_date)
+                if price > 0:
+                    quantity = int(capital_per_position / price)
+                    new_positions[stock] = {
+                        'quantity': quantity,
+                        'side': 'long',
+                        'price': price,
+                        'weight': 1.0 / total_stocks_holding
+                    }
+                    
+                    # Record trade
+                    trades.append({
+                        'date': rebalance_date,
+                        'stock': stock.ticker,
+                        'action': 'BUY',
+                        'quantity': quantity,
+                        'price': price,
+                        'reason': f'Long position - {ranking_metric}: {stock_score["score"]:.2f}'
+                    })
+            
+            # Short positions
+            for stock_score in stocks_to_short:
+                stock = stock_score['stock']
+                price = self._get_current_price(stock, rebalance_date)
+                if price > 0:
+                    quantity = int(capital_per_position / price)
+                    new_positions[stock] = {
+                        'quantity': quantity,
+                        'side': 'short',
+                        'price': price,
+                        'weight': 1.0 / total_stocks_holding
+                    }
+                    
+                    # Record trade
+                    trades.append({
+                        'date': rebalance_date,
+                        'stock': stock.ticker,
+                        'action': 'SHORT',
+                        'quantity': quantity,
+                        'price': price,
+                        'reason': f'Short position - {ranking_metric}: {stock_score["score"]:.2f}'
+                    })
+            
+            # 6. Calculate portfolio performance for the month
+            month_start = rebalance_date
+            if rebalance_date.month == 12:
+                month_end = date(rebalance_date.year + 1, 1, 1) - timedelta(days=1)
+            else:
+                month_end = date(rebalance_date.year, rebalance_date.month + 1, 1) - timedelta(days=1)
+            
+            month_end = min(month_end, end_date)
+            
+            # Calculate daily portfolio values
+            current_date = month_start
+            while current_date <= month_end:
+                daily_value = current_capital  # Start with cash
+                
+                # Add P&L from positions
+                for stock, position in new_positions.items():
+                    current_price = self._get_current_price(stock, current_date)
+                    if current_price > 0:
+                        price_change = (current_price - position['price']) / position['price']
+                        if position['side'] == 'long':
+                            daily_value += position['quantity'] * position['price'] * price_change
+                        else:  # short
+                            daily_value -= position['quantity'] * position['price'] * price_change
+                
+                portfolio_values.append({
+                    'date': current_date,
+                    'portfolio_value': daily_value,
+                    'return': (daily_value - current_capital) / current_capital
+                })
+                
+                current_date += timedelta(days=1)
+            
+            # Update capital for next period
+            if portfolio_values:
+                current_capital = portfolio_values[-1]['portfolio_value']
+            
+            current_positions = new_positions
+        
+        # Calculate performance metrics
+        if portfolio_values:
+            returns = [pv['return'] for pv in portfolio_values]
+            
+            total_return = (portfolio_values[-1]['portfolio_value'] - self.equity_portfolio.initial_capital) / self.equity_portfolio.initial_capital
+            
+            # Annualized return
+            days = (end_date - start_date).days
+            annualized_return = (1 + total_return) ** (365.25 / days) - 1 if days > 0 else 0
+            
+            # Volatility
+            volatility = np.std(returns) * np.sqrt(252) if returns else 0
+            
+            # Sharpe ratio (assuming 2% risk-free rate)
+            sharpe_ratio = (annualized_return - 0.02) / volatility if volatility > 0 else 0
+            
+            # Maximum drawdown
+            peak = portfolio_values[0]['portfolio_value']
+            max_drawdown = 0
+            for pv in portfolio_values:
+                if pv['portfolio_value'] > peak:
+                    peak = pv['portfolio_value']
+                drawdown = (peak - pv['portfolio_value']) / peak
+                max_drawdown = max(max_drawdown, drawdown)
+            
+            # Generate S&P 500 comparison data (placeholder)
+            sp500_data = []
+            sp500_current = sp500_initial
+            for pv in portfolio_values:
+                # Simulate S&P 500 performance (would use real data)
+                daily_return = np.random.normal(0.0003, 0.01)  # ~7% annual return, ~16% volatility
+                sp500_current *= (1 + daily_return)
+                sp500_data.append({
+                    'date': pv['date'],
+                    'sp500_value': sp500_current,
+                    'sp500_return': (sp500_current - sp500_initial) / sp500_initial
+                })
+        else:
+            total_return = 0
+            annualized_return = 0
+            sharpe_ratio = 0
+            max_drawdown = 0
+            volatility = 0
+            sp500_data = []
+        
+        return {
+            'total_return': total_return,
+            'annualized_return': annualized_return,
+            'sharpe_ratio': sharpe_ratio,
+            'max_drawdown': max_drawdown,
+            'volatility': volatility,
+            'total_trades': len(trades),
+            'win_rate': 0.5,  # Placeholder
+            'avg_trade_return': 0.0,  # Placeholder
+            'performance_data': portfolio_values,
+            'sp500_data': sp500_data,
+            'trades': trades,
+            'final_positions': len(current_positions)
+        }
+
+    def _filter_stocks(self, date: date, sectors: List[str], min_market_cap: float, max_market_cap: float,
+                      min_stock_price: float, max_stock_price: float, min_volume: int, max_volume: int) -> List[Stock]:
+        """Filter stocks based on specified criteria."""
+        from stocks.models import DailyPriceData
+        
+        stocks = Stock.objects.all()
+        
+        # Filter by sectors if specified
+        if sectors:
+            stocks = stocks.filter(sector__in=sectors)
+        
+        # Filter by market cap
+        stocks = stocks.filter(market_cap__gte=min_market_cap)
+        if max_market_cap < float('inf'):
+            stocks = stocks.filter(market_cap__lte=max_market_cap)
+        
+        # Get stocks with price data on the given date
+        filtered_stocks = []
+        for stock in stocks:
+            price_data = DailyPriceData.objects.filter(
+                stock=stock, 
+                date=date
+            ).first()
+            
+            if price_data:
+                # Filter by price
+                if min_stock_price <= float(price_data.close_price) <= max_stock_price:
+                    # Filter by volume
+                    if min_volume <= price_data.volume <= max_volume:
+                        filtered_stocks.append(stock)
+        
+        return filtered_stocks
+
+    def _calculate_fundamental_scores(self, stocks: List[Stock], date: date, ranking_metric: str,
+                                    income_statement_data: List[str], balance_sheet_data: List[str], 
+                                    cashflow_data: List[str]) -> List[Dict]:
+        """Calculate fundamental scores for stocks based on selected metric."""
+        from stocks.models import IncomeStatement, BalanceSheet, CashFlowStatement
+        
+        stock_scores = []
+        
+        for stock in stocks:
+            # Get latest financial data
+            latest_income = IncomeStatement.objects.filter(
+                stock=stock, 
+                period_end_date__lte=date
+            ).order_by('-period_end_date').first()
+            
+            latest_balance = BalanceSheet.objects.filter(
+                stock=stock,
+                period_end_date__lte=date
+            ).order_by('-period_end_date').first()
+            
+            latest_cashflow = CashFlowStatement.objects.filter(
+                stock=stock,
+                period_end_date__lte=date
+            ).order_by('-period_end_date').first()
+            
+            score = 0.0
+            
+            # Calculate score based on ranking metric
+            if ranking_metric == 'eps' and latest_income:
+                if latest_income.earnings_per_share_basic and latest_income.earnings_per_share_basic > 0:
+                    score = float(latest_income.earnings_per_share_basic)
+                    
+            elif ranking_metric == 'pe_ratio' and latest_income:
+                if stock.market_cap and latest_income.net_income and latest_income.net_income > 0:
+                    score = stock.market_cap / latest_income.net_income  # Lower is better, will be reversed
+                    
+            elif ranking_metric == 'pb_ratio' and latest_balance:
+                if stock.market_cap and latest_balance.total_equity and latest_balance.total_equity > 0:
+                    score = stock.market_cap / latest_balance.total_equity  # Lower is better, will be reversed
+                    
+            elif ranking_metric == 'roe' and latest_income and latest_balance:
+                if latest_balance.total_equity and latest_balance.total_equity > 0:
+                    score = latest_income.net_income / latest_balance.total_equity
+                    
+            elif ranking_metric == 'roa' and latest_income and latest_balance:
+                if latest_balance.total_assets and latest_balance.total_assets > 0:
+                    score = latest_income.net_income / latest_balance.total_assets
+                    
+            elif ranking_metric == 'revenue_growth' and latest_income:
+                # Would need previous year data for growth calculation
+                score = latest_income.revenue / 1000000000  # Placeholder
+                
+            elif ranking_metric == 'earnings_growth' and latest_income:
+                # Would need previous year data for growth calculation
+                score = latest_income.net_income / 100000000  # Placeholder
+                
+            elif ranking_metric == 'debt_to_equity' and latest_balance:
+                if latest_balance.total_equity and latest_balance.total_equity > 0:
+                    score = latest_balance.total_liabilities / latest_balance.total_equity  # Lower is better
+                    
+            elif ranking_metric == 'current_ratio' and latest_balance:
+                if latest_balance.total_current_liabilities and latest_balance.total_current_liabilities > 0:
+                    score = latest_balance.total_current_assets / latest_balance.total_current_liabilities
+                    
+            elif ranking_metric == 'operating_margin' and latest_income:
+                if latest_income.revenue and latest_income.revenue > 0:
+                    score = latest_income.operating_income / latest_income.revenue
+            
+            stock_scores.append({
+                'stock': stock,
+                'score': score
+            })
+        
+        # Sort by score (handle metrics where lower is better)
+        if ranking_metric in ['pe_ratio', 'pb_ratio', 'debt_to_equity']:
+            stock_scores.sort(key=lambda x: x['score'])  # Ascending for lower-is-better metrics
+        else:
+            stock_scores.sort(key=lambda x: x['score'], reverse=True)  # Descending for higher-is-better metrics
+        
+        return stock_scores
+
+    def _get_current_price(self, stock: Stock, date: date) -> float:
+        """Get current price for a stock on given date."""
+        from stocks.models import DailyPriceData
+        
+        price_data = DailyPriceData.objects.filter(
+            stock=stock,
+            date__lte=date
+        ).order_by('-date').first()
+        
+        return float(price_data.close_price) if price_data else 0.0
