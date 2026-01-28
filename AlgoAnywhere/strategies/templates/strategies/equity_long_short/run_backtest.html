@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 {% load humanize %}
+{% load math_filters %}
 
 {% block title %}Running Backtest - Equity Long/Short Strategy{% endblock %}
 
@@ -50,34 +51,35 @@
 
 .card {
     border-radius: 1rem;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     margin-bottom: 1.5rem;
-    border: none;
+    border: 1px solid var(--border);
     margin-left: 0;
     margin-right: 0;
 }
 
 .card-header {
-    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-    border-bottom: 2px solid #e2e8f0;
+    background: var(--bg-elevated);
+    border-bottom: 2px solid var(--border);
     border-radius: 1rem 1rem 0 0 !important;
     padding: 1.5rem;
 }
 
 .card-header h3 {
-    color: var(--primary-color);
+    color: var(--text);
     font-size: 1.25rem;
     font-weight: 600;
     margin: 0;
 }
 
 .card-header i {
-    color: var(--secondary-color);
+    color: var(--accent);
     margin-right: 0.5rem;
 }
 
 .card-body {
     padding: 2rem;
+    background: var(--bg-card);
 }
 
 .btn-lg {
@@ -90,7 +92,7 @@
 .action-section {
     margin-top: 3rem;
     padding: 2rem;
-    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    background: transparent;
     border-radius: 1rem;
     margin-left: 0;
     margin-right: 0;
@@ -115,25 +117,38 @@
             <h3><i class="fas fa-cog"></i> Backtest Configuration</h3>
         </div>
         <div class="card-body">
-            <div class="row">
-                <div class="col-md-6">
-                    <h5>Basic Settings</h5>
-                    <ul class="list-unstyled">
-                        <li><strong>Name:</strong> {{ config.name }}</li>
-                        <li><strong>Initial Capital:</strong> ${{ config.initial_capital|floatformat:0|intcomma }}</li>
-                        <li><strong>Period:</strong> {{ config.start_date }} to {{ config.end_date }}</li>
-                        <li><strong>Total Holdings:</strong> {{ config.total_stocks_holding }} stocks</li>
-                        <li><strong>Ranking Metric:</strong> {{ config.ranking_metric|title }}</li>
-                    </ul>
+            <div class="config-list">
+                <div style="display: flex; margin-bottom: 8px;">
+                    <div style="width: 150px; font-weight: bold;">Name:</div>
+                    <div>{{ config.name }}</div>
                 </div>
-                <div class="col-md-6">
-                    <h5>Filtering Criteria</h5>
-                    <ul class="list-unstyled">
-                        <li><strong>Sectors:</strong> {{ config.sectors|length }} selected</li>
-                        <li><strong>Market Cap:</strong> ${{ config.min_market_cap|floatformat:0|intcomma }} - ${{ config.max_market_cap|floatformat:0|intcomma }}</li>
-                        <li><strong>Stock Price:</strong> ${{ config.min_stock_price }} - ${{ config.max_stock_price }}</li>
-                        <li><strong>Volume:</strong> {{ config.min_volume|intcomma }} - {{ config.max_volume|intcomma }} shares</li>
-                    </ul>
+                <div style="display: flex; margin-bottom: 8px;">
+                    <div style="width: 150px; font-weight: bold;">Period:</div>
+                    <div>{{ config.start_date }} to {{ config.end_date }}</div>
+                </div>
+                <div style="display: flex; margin-bottom: 8px;">
+                    <div style="width: 150px; font-weight: bold;">Total Holdings:</div>
+                    <div>{{ config.total_stocks_holding|add:config.total_stocks_holding|floatformat:0|intcomma }} stocks ({{ config.total_stocks_holding|intcomma }} long + {{ config.total_stocks_holding|intcomma }} short)</div>
+                </div>
+                <div style="display: flex; margin-bottom: 8px;">
+                    <div style="width: 150px; font-weight: bold;">Ranking Metric:</div>
+                    <div>{{ config.ranking_metric|title }}</div>
+                </div>
+                <div style="display: flex; margin-bottom: 8px;">
+                    <div style="width: 150px; font-weight: bold;">Sectors:</div>
+                    <div>{% for sector in config.sectors %}{{ sector }}{% if not forloop.last %}, {% endif %}{% endfor %}</div>
+                </div>
+                <div style="display: flex; margin-bottom: 8px;">
+                    <div style="width: 150px; font-weight: bold;">Market Cap:</div>
+                    <div>${{ config.min_market_cap|div:1000000000|floatformat:0|intcomma }}B - ${{ config.max_market_cap|div:1000000000|floatformat:0|intcomma }}B</div>
+                </div>
+                <div style="display: flex; margin-bottom: 8px;">
+                    <div style="width: 150px; font-weight: bold;">Stock Price:</div>
+                    <div>${{ config.min_stock_price|floatformat:0|intcomma }} - ${{ config.max_stock_price|floatformat:0|intcomma }}</div>
+                </div>
+                <div style="display: flex; margin-bottom: 8px;">
+                    <div style="width: 150px; font-weight: bold;">Volume:</div>
+                    <div>{{ config.min_volume|floatformat:0|intcomma }}M - {{ config.max_volume|floatformat:0|intcomma }}M shares</div>
                 </div>
             </div>
         </div>
@@ -175,61 +190,80 @@
             <h3><i class="fas fa-info-circle"></i> Strategy Execution Details</h3>
         </div>
         <div class="card-body">
-            <div class="row">
-                <div class="col-md-12">
-                    <h5>Monthly Rebalancing Process</h5>
-                    <ol>
-                        <li><strong>Filter Universe:</strong> Apply your filtering criteria to select eligible stocks</li>
-                        <li><strong>Calculate Metrics:</strong> Compute {{ config.ranking_metric|title }} for all eligible stocks</li>
-                        <li><strong>Rank Stocks:</strong> Sort stocks by the selected metric (highest to lowest)</li>
-                        <li><strong>Select Positions:</strong> 
-                            <ul>
-                                <li>Go long on top {% widthratio config.total_stocks_holding 2 1 %} stocks</li>
-                                <li>Go short on bottom {% widthratio config.total_stocks_holding 2 1 %} stocks</li>
-                            </ul>
-                        </li>
-                        <li><strong>Equal Weighting:</strong> Allocate equal capital to each position</li>
-                        <li><strong>Monthly Rebalancing:</strong> Repeat process on first trading day of each month</li>
-                    </ol>
-                    
-                    <h5 class="mt-3">Performance Metrics</h5>
-                    <p>The backtest will calculate and compare the following metrics:</p>
-                    <ul>
-                        <li>Total Return and Annualized Return</li>
-                        <li>Sharpe Ratio and Sortino Ratio</li>
-                        <li>Maximum Drawdown</li>
-                        <li>Volatility and Beta</li>
-                        <li>Win Rate and Average Trade Return</li>
-                        <li>Performance vs S&P 500 Benchmark</li>
-                    </ul>
+            <div class="strategy-details">
+                <h5>Monthly Rebalancing Process</h5>
+                <div style="display: flex; margin-bottom: 8px;">
+                    <div style="width: 150px; font-weight: bold;">1. Filter:</div>
+                    <div>Apply your filtering criteria to select eligible stocks</div>
+                </div>
+                <div style="display: flex; margin-bottom: 8px;">
+                    <div style="width: 150px; font-weight: bold;">2. Calculate:</div>
+                    <div>Compute {{ config.ranking_metric|title }} for all eligible stocks</div>
+                </div>
+                <div style="display: flex; margin-bottom: 8px;">
+                    <div style="width: 150px; font-weight: bold;">3. Rank:</div>
+                    <div>Sort stocks by the selected metric (highest to lowest)</div>
+                </div>
+                <div style="display: flex; margin-bottom: 8px;">
+                    <div style="width: 150px; font-weight: bold;">4. Select:</div>
+                    <div>
+                        <div style="margin-left: 20px;">• Go long on top {{ config.total_stocks_holding|intcomma }} stocks</div>
+                        <div style="margin-left: 20px;">• Go short on bottom {{ config.total_stocks_holding|intcomma }} stocks</div>
+                    </div>
+                </div>
+                <div style="display: flex; margin-bottom: 8px;">
+                    <div style="width: 150px; font-weight: bold;">5. Weighting:</div>
+                    <div>Allocate equal capital to each position</div>
+                </div>
+                <div style="display: flex; margin-bottom: 8px;">
+                    <div style="width: 150px; font-weight: bold;">6. Rebalance:</div>
+                    <div>Repeat process on first trading day of each month</div>
+                </div>
+                
+                <h5 style="margin-top: 20px;">Performance Metrics</h5>
+                <p>The backtest will calculate and compare the following metrics:</p>
+                <div style="display: flex; margin-bottom: 8px;">
+                    <div style="width: 300px;">• Total Return and Annualized Return</div>
+                </div>
+                <div style="display: flex; margin-bottom: 8px;">
+                    <div style="width: 300px;">• Sharpe Ratio and Sortino Ratio</div>
+                </div>
+                <div style="display: flex; margin-bottom: 8px;">
+                    <div style="width: 300px;">• Maximum Drawdown</div>
+                </div>
+                <div style="display: flex; margin-bottom: 8px;">
+                    <div style="width: 300px;">• Volatility and Beta</div>
+                </div>
+                <div style="display: flex; margin-bottom: 8px;">
+                    <div style="width: 300px;">• Win Rate and Average Trade Return</div>
+                </div>
+                <div style="display: flex; margin-bottom: 8px;">
+                    <div style="width: 300px;">• Performance vs S&P 500 Benchmark</div>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Action Buttons -->
-    <div class="action-section">
-        <div class="row">
-            <div class="col-12 text-center">
-                <button type="button" class="btn btn-primary btn-lg" id="startBacktestBtn">
-                    <i class="fas fa-play"></i> Start Backtest
-                </button>
-                <button type="button" class="btn btn-warning btn-lg" id="pauseBacktestBtn" style="display: none;">
-                    <i class="fas fa-pause"></i> Pause
-                </button>
-                <button type="button" class="btn btn-danger btn-lg" id="cancelBacktestBtn" style="display: none;">
-                    <i class="fas fa-stop"></i> Cancel
-                </button>
-                <a href="{% url 'strategies:equity_long_short_backtest_config' %}" class="btn btn-secondary btn-lg ms-3">
-                    <i class="fas fa-arrow-left"></i> Modify Configuration
-                </a>
-            </div>
-        </div>
+    <div style="margin-bottom: 2rem;">
+        <button type="button" class="btn btn-primary btn-lg" id="startBacktestBtn">
+            <i class="fas fa-play"></i> Start Backtest
+        </button>
+        <button type="button" class="btn btn-warning btn-lg" id="pauseBacktestBtn" style="display: none;">
+            <i class="fas fa-pause"></i> Pause
+        </button>
+        <button type="button" class="btn btn-danger btn-lg" id="cancelBacktestBtn" style="display: none;">
+            <i class="fas fa-stop"></i> Cancel
+        </button>
+        <a href="{% url 'strategies:equity_long_short_backtest_config' %}" class="btn btn-secondary btn-lg ms-3">
+            <i class="fas fa-arrow-left"></i> Modify Configuration
+        </a>
     </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
 $(document).ready(function() {
     let backtestInterval;

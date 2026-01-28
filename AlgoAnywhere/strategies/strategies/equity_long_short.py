@@ -366,7 +366,7 @@ class EquityLongShortStrategy(BaseStrategy):
         import pandas as pd
         import numpy as np
         from datetime import datetime, timedelta
-        from stocks.models import Stock, CompanyInfo, Sector, DailyPriceData
+        from stocks.models import Stock, DailyPriceData
         
         # Initialize results
         portfolio_values = []

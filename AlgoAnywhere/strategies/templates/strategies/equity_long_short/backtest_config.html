@@ -1207,15 +1207,15 @@ option {
                     <div>
                         <div class="form-group">
                             <label for="name"><i class="fas fa-tag"></i> Backtest Name</label>
-                            <input type="text" class="form-control" id="name" name="name" required 
-                                   placeholder="e.g., Value Strategy Q1 2024">
+                            <input type="text" class="form-control" id="name" name="name" 
+                                   value="{% if config %}{{ config.name }}{% else %}{% endif %}" placeholder="e.g., Value Strategy Q1 2024" required>
                         </div>
                     </div>
                     <div>
                         <div class="form-group">
                             <label for="start_date"><i class="fas fa-calendar-alt"></i> Start Date</label>
                             <input type="text" class="form-control" id="start_date" name="start_date" 
-                                   value="01/01/2020" placeholder="DD/MM/YYYY" pattern="\d{2}/\d{2}/\d{4}" required>
+                                   value="{% if config %}{{ config.start_date }}{% else %}01/01/2020{% endif %}" placeholder="DD/MM/YYYY" pattern="\d{2}/\d{2}/\d{4}" required>
                             <small class="form-text text-muted">Format: DD/MM/YYYY</small>
                         </div>
                     </div>
@@ -1223,7 +1223,7 @@ option {
                         <div class="form-group">
                             <label for="end_date"><i class="fas fa-calendar-check"></i> End Date</label>
                             <input type="text" class="form-control" id="end_date" name="end_date" 
-                                   value="31/12/2024" placeholder="DD/MM/YYYY" pattern="\d{2}/\d{2}/\d{4}" required>
+                                   value="{% if config %}{{ config.end_date }}{% else %}31/12/2024{% endif %}" placeholder="DD/MM/YYYY" pattern="\d{2}/\d{2}/\d{4}" required>
                             <small class="form-text text-muted">Format: DD/MM/YYYY</small>
                         </div>
                     </div>
@@ -1234,7 +1234,7 @@ option {
                         <div class="form-group">
                             <label for="total_stocks_holding"><i class="fas fa-briefcase"></i> Stocks per Position (Long/Short)</label>
                             <input type="number" class="form-control" id="total_stocks_holding" name="total_stocks_holding" 
-                                   value="20" min="1" max="50" step="1" required>
+                                   value="{% if config %}{{ config.total_stocks_holding }}{% else %}20{% endif %}" min="1" max="50" step="1" required>
                             <small class="form-text text-muted">Number of stocks for each position (total = 2x this amount)</small>
                         </div>
                     </div>
@@ -1282,7 +1282,7 @@ option {
                                                     <option value="gross_profit">Gross Profit</option>
                                                     <option value="operating_income">Operating Income</option>
                                                     <option value="ebitda">EBITDA</option>
-                                                    <option value="earnings_per_share_basic">Earnings Per Share (EPS)</option>
+                                                    <option value="earnings_per_share_basic" {% if config %}{% if config.ranking_metric == 'earnings_per_share_basic' %}selected{% endif %}{% else %}selected{% endif %}>Earnings Per Share (EPS)</option>
                                                     <option value="gross_profit_margin">Gross Profit Margin</option>
                                                     <option value="operating_margin">Operating Margin</option>
                                                     <option value="net_profit_margin">Net Profit Margin</option>
@@ -1445,7 +1445,10 @@ option {
                             <div class="sector-item">
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" name="sectors" 
-                                           value="{{ sector.name }}" id="sector_{{ forloop.counter }}" checked>
+                                           value="{{ sector.name }}" id="sector_{{ forloop.counter }}" 
+                                           {% if config %}
+                                               {% if sector.name in config.sectors %}checked{% endif %}
+                                           {% else %}checked{% endif %}>
                                     <label class="form-check-label sector-name" for="sector_{{ forloop.counter }}">
                                         {{ sector.name }}
                                     </label>
@@ -1466,7 +1469,7 @@ option {
                             <label for="min_market_cap">Minimum Market Cap</label>
                             <div class="input-group">
                                 <input type="number" class="form-control" id="min_market_cap" name="min_market_cap" 
-                                       value="10" min="0" step="0.1">
+                                       value="{% if config %}{{ config.min_market_cap|floatformat:1 }}{% else %}10{% endif %}" min="0" step="1">
                                 <div class="input-group-text">B USD</div>
                             </div>
                         </div>
@@ -1474,7 +1477,7 @@ option {
                             <label for="max_market_cap">Maximum Market Cap</label>
                             <div class="input-group">
                                 <input type="number" class="form-control" id="max_market_cap" name="max_market_cap" 
-                                       value="1000" min="0" step="1">
+                                       value="{% if config %}{{ config.max_market_cap|floatformat:1 }}{% else %}1000{% endif %}" min="0" step="1">
                                 <div class="input-group-text">B USD</div>
                             </div>
                         </div>
@@ -1488,7 +1491,7 @@ option {
                             <div class="input-group">
                                 <div class="input-group-text">$</div>
                                 <input type="number" class="form-control" id="min_stock_price" name="min_stock_price" 
-                                       value="5" min="0" step="0.01">
+                                       value="{% if config %}{{ config.min_stock_price|floatformat:0 }}{% else %}5{% endif %}" min="0" step="1">
                             </div>
                         </div>
                         <div class="form-group">
@@ -1496,7 +1499,7 @@ option {
                             <div class="input-group">
                                 <div class="input-group-text">$</div>
                                 <input type="number" class="form-control" id="max_stock_price" name="max_stock_price" 
-                                       value="1000" min="0" step="1">
+                                       value="{% if config %}{{ config.max_stock_price|floatformat:0 }}{% else %}1000{% endif %}" min="0" step="1">
                             </div>
                         </div>
                     </div>
@@ -1508,7 +1511,7 @@ option {
                             <label for="min_volume">Minimum Volume</label>
                             <div class="input-group">
                                 <input type="number" class="form-control" id="min_volume" name="min_volume" 
-                                       value="500" min="0" step="0.01">
+                                       value="{% if config %}{{ config.min_volume|floatformat:0 }}{% else %}500{% endif %}" min="0" step="1">
                                 <div class="input-group-text">M shares</div>
                             </div>
                         </div>
@@ -1516,7 +1519,7 @@ option {
                             <label for="max_volume">Maximum Volume</label>
                             <div class="input-group">
                                 <input type="number" class="form-control" id="max_volume" name="max_volume" 
-                                       value="100000" min="0" step="0.1">
+                                       value="{% if config %}{{ config.max_volume|floatformat:0 }}{% else %}100000{% endif %}" min="0" step="1">
                                 <div class="input-group-text">M shares</div>
                             </div>
                         </div>
@@ -1547,21 +1550,13 @@ option {
         </div>
 
         <!-- Submit Button -->
-        <div class="config-card wide-card">
-            <div class="card-body">
-                <div class="submit-section">
-                    <div class="row">
-                        <div class="col-12 text-center">
-                            <button type="submit" class="btn btn-primary btn-lg">
-                                <i class="fas fa-play"></i> Run Backtest
-                            </button>
-                            <a href="{% url 'strategies:equity_long_short_home' %}" class="btn btn-secondary btn-lg ms-3">
-                                <i class="fas fa-times"></i> Cancel
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <div style="margin-bottom: 2rem;">
+            <button type="submit" class="btn btn-primary btn-lg">
+                <i class="fas fa-play"></i> Run Backtest
+            </button>
+            <a href="{% url 'strategies:equity_long_short_home' %}" class="btn btn-secondary btn-lg ms-3">
+                <i class="fas fa-times"></i> Cancel
+            </a>
         </div>
     </form>
 </div>
@@ -1919,6 +1914,48 @@ $(document).ready(function() {
     // Update counts when total stock holdings changes
     $('#total_stocks_holding').on('input change', function() {
         updatePositionCounts();
+    });
+    
+    // Real-time integer validation for numeric fields
+    function validateIntegerInput(input, fieldName) {
+        const value = $(input).val();
+        const inputId = $(input).attr('id');
+        const helpId = inputId + '_help';
+        
+        // Remove existing help message if any
+        $('#' + helpId).remove();
+        
+        if (value && value.includes('.')) {
+            // Show help message for decimal input
+            const helpMessage = $('<small id="' + helpId + '" class="form-text text-warning">' +
+                '<i class="fas fa-exclamation-triangle"></i> ' + fieldName + ' must be a whole number. Decimal values will be rounded.' +
+                '</small>');
+            $(input).parent().after(helpMessage);
+            
+            // Auto-round to nearest integer
+            const roundedValue = Math.round(parseFloat(value));
+            $(input).val(roundedValue);
+        }
+    }
+    
+    // Add validation to all numeric input fields
+    $('#total_stocks_holding').on('input blur', function() {
+        validateIntegerInput(this, 'Stocks per position');
+    });
+    
+    $('#min_market_cap, #max_market_cap').on('input blur', function() {
+        const fieldName = $(this).attr('id').includes('min') ? 'Minimum market cap' : 'Maximum market cap';
+        validateIntegerInput(this, fieldName);
+    });
+    
+    $('#min_stock_price, #max_stock_price').on('input blur', function() {
+        const fieldName = $(this).attr('id').includes('min') ? 'Minimum stock price' : 'Maximum stock price';
+        validateIntegerInput(this, fieldName);
+    });
+    
+    $('#min_volume, #max_volume').on('input blur', function() {
+        const fieldName = $(this).attr('id').includes('min') ? 'Minimum volume' : 'Maximum volume';
+        validateIntegerInput(this, fieldName);
     });
 });
 </script>

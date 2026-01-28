@@ -40,10 +40,30 @@ def backtest_config(request):
     
     if request.method == 'POST':
         # Extract backtest parameters
+        # Convert dates from DD/MM/YYYY to YYYY-MM-DD format
+        start_date = request.POST.get('start_date')
+        end_date = request.POST.get('end_date')
+        
+        if start_date:
+            try:
+                # Parse DD/MM/YYYY and convert to YYYY-MM-DD
+                start_date_obj = timezone.datetime.strptime(start_date, '%d/%m/%Y')
+                start_date = start_date_obj.strftime('%Y-%m-%d')
+            except ValueError:
+                pass  # Keep original if parsing fails
+                
+        if end_date:
+            try:
+                # Parse DD/MM/YYYY and convert to YYYY-MM-DD
+                end_date_obj = timezone.datetime.strptime(end_date, '%d/%m/%Y')
+                end_date = end_date_obj.strftime('%Y-%m-%d')
+            except ValueError:
+                pass  # Keep original if parsing fails
+        
         backtest_data = {
             'name': request.POST.get('name'),
-            'start_date': request.POST.get('start_date'),
-            'end_date': request.POST.get('end_date'),
+            'start_date': start_date,
+            'end_date': end_date,
             'total_stocks_holding': int(request.POST.get('total_stocks_holding', 20)),
             
             # Filtering criteria
@@ -68,9 +88,55 @@ def backtest_config(request):
         # Redirect to results page to run the backtest
         return redirect('strategies:equity_long_short_run_backtest')
     
+    # Check for existing configuration in session (for modify configuration)
+    existing_config = request.session.get('backtest_config')
+    
+    # Prepare context with sectors and existing config
     context = {
         'sectors': sectors_data,
     }
+    
+    # Add existing configuration to context if available
+    if existing_config:
+        # Convert values back to display format
+        display_config = existing_config.copy()
+        
+        # Convert dates from YYYY-MM-DD back to DD/MM/YYYY for display
+        start_date = existing_config.get('start_date')
+        end_date = existing_config.get('end_date')
+        
+        if start_date:
+            try:
+                # Parse YYYY-MM-DD and convert to DD/MM/YYYY
+                start_date_obj = timezone.datetime.strptime(start_date, '%Y-%m-%d')
+                display_config['start_date'] = start_date_obj.strftime('%d/%m/%Y')
+            except ValueError:
+                display_config['start_date'] = start_date  # Keep original if parsing fails
+                
+        if end_date:
+            try:
+                # Parse YYYY-MM-DD and convert to DD/MM/YYYY
+                end_date_obj = timezone.datetime.strptime(end_date, '%Y-%m-%d')
+                display_config['end_date'] = end_date_obj.strftime('%d/%m/%Y')
+            except ValueError:
+                display_config['end_date'] = end_date  # Keep original if parsing fails
+        
+        # Convert market cap back to billions for display
+        display_config['min_market_cap'] = existing_config.get('min_market_cap', 0) / 1000000000
+        display_config['max_market_cap'] = existing_config.get('max_market_cap', 0) / 1000000000
+        
+        # Handle infinite values for max_stock_price and max_volume
+        if existing_config.get('max_stock_price') == float('inf'):
+            display_config['max_stock_price'] = ''
+        else:
+            display_config['max_stock_price'] = existing_config.get('max_stock_price', '')
+            
+        if existing_config.get('max_volume') == float('inf'):
+            display_config['max_volume'] = ''
+        else:
+            display_config['max_volume'] = existing_config.get('max_volume', '')
+        
+        context['config'] = display_config
     
     return render(request, 'strategies/equity_long_short/backtest_config.html', context)
 
@@ -87,13 +153,44 @@ def run_backtest(request):
     if request.method == 'POST':
         try:
             # Create portfolio
+            # Convert dates to YYYY-MM-DD for database (handle both DD/MM/YYYY and YYYY-MM-DD)
+            start_date = backtest_config['start_date']
+            end_date = backtest_config['end_date']
+            
+            # Convert start_date
+            if start_date:
+                try:
+                    if '/' in start_date:
+                        # DD/MM/YYYY format
+                        start_date_obj = timezone.datetime.strptime(start_date, '%d/%m/%Y')
+                        start_date = start_date_obj.strftime('%Y-%m-%d')
+                    elif '-' in start_date:
+                        # Already YYYY-MM-DD format, validate it
+                        timezone.datetime.strptime(start_date, '%Y-%m-%d')
+                except ValueError:
+                    # Fallback to today if parsing fails
+                    start_date = timezone.datetime.now().strftime('%Y-%m-%d')
+            
+            # Convert end_date
+            if end_date:
+                try:
+                    if '/' in end_date:
+                        # DD/MM/YYYY format
+                        end_date_obj = timezone.datetime.strptime(end_date, '%d/%m/%Y')
+                        end_date = end_date_obj.strftime('%Y-%m-%d')
+                    elif '-' in end_date:
+                        # Already YYYY-MM-DD format, validate it
+                        timezone.datetime.strptime(end_date, '%Y-%m-%d')
+                except ValueError:
+                    # Fallback to 1 year from now if parsing fails
+                    end_date = (timezone.datetime.now() + timezone.timedelta(days=365)).strftime('%Y-%m-%d')
+            
             portfolio = EquityLongShortPortfolio.objects.create(
                 name=backtest_config['name'],
                 user=request.user,
                 strategy_type='equity_long_short',
-                initial_capital=backtest_config['initial_capital'],
-                start_date=backtest_config['start_date'],
-                end_date=backtest_config['end_date'],
+                start_date=start_date,
+                end_date=end_date,
                 universe_type='custom',
                 long_target_weight=0.5,
                 short_target_weight=0.5,
@@ -176,16 +273,16 @@ def backtest_results_display(request):
     
     # Calculate percentage values for display
     results = backtest_results.copy()
-    results['total_return_pct'] = results.get('total_return', 0) * 100
-    results['annualized_return_pct'] = results.get('annualized_return', 0) * 100
-    results['volatility_pct'] = results.get('volatility', 0) * 100
-    results['max_drawdown_pct'] = results.get('max_drawdown', 0) * 100
-    results['win_rate_pct'] = results.get('win_rate', 0) * 100
-    results['avg_trade_return_pct'] = results.get('avg_trade_return', 0) * 100
+    results['total_return_pct'] = float(results.get('total_return', 0)) * 100
+    results['annualized_return_pct'] = float(results.get('annualized_return', 0)) * 100
+    results['volatility_pct'] = float(results.get('volatility', 0)) * 100
+    results['max_drawdown_pct'] = float(results.get('max_drawdown', 0)) * 100
+    results['win_rate_pct'] = float(results.get('win_rate', 0)) * 100
+    results['avg_trade_return_pct'] = float(results.get('avg_trade_return', 0)) * 100
     
     # Calculate portfolio values
-    initial_capital = portfolio.initial_capital
-    results['final_value'] = initial_capital * (1 + results.get('total_return', 0))
+    initial_capital = float(portfolio.initial_capital)
+    results['final_value'] = initial_capital * (1 + float(results.get('total_return', 0)))
     results['sp500_final_value'] = initial_capital * 1.45  # 45% return for S&P 500
     
     # Calculate trade values
@@ -194,9 +291,9 @@ def backtest_results_display(request):
         trade['total_value'] = trade.get('quantity', 0) * trade.get('price', 0)
     
     # Calculate additional metrics
-    if results.get('volatility', 0) > 0:
-        results['sortino_ratio'] = (results.get('total_return', 0) + 0.02) / results.get('volatility', 1)
-        results['risk_adjusted_return'] = results.get('annualized_return', 0) / results.get('volatility', 1)
+    if float(results.get('volatility', 0)) > 0:
+        results['sortino_ratio'] = (float(results.get('total_return', 0)) + 0.02) / float(results.get('volatility', 1))
+        results['risk_adjusted_return'] = float(results.get('annualized_return', 0)) / float(results.get('volatility', 1))
     else:
         results['sortino_ratio'] = 0
         results['risk_adjusted_return'] = 0
